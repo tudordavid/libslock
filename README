@@ -1,4 +1,11 @@
-Compliation options:
+This repository provides:
+    - libslock, a cross-platform interface to atomic operations and other common operations 
+    - implementations of a number of well-known locking algorithms 
+    - benchmarks testing the performance of atomic operations and various locking algorithms
+
+The package has been tested on x86_64 Intel and AMD machines, Tilera and Sparc architectures.
+
+Makefile parameters:
 
 Locking Algorithm
 ================
