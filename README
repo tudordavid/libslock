@@ -5,6 +5,8 @@ This repository provides:
 
 The package has been tested on x86_64 Intel and AMD machines, Tilera and Sparc architectures.
 
+A version of this code was used in the paper "Everything you always wanted to know about synchronization but were afraid to ask" (accessible here: http://sigops.org/sosp/sosp13/papers/p33-david.pdf).
+
 Makefile parameters:
 
 Locking Algorithm
@@ -40,7 +42,7 @@ For the benchmarks testing atomic operations, this parameter selects the desired
 TEST_FAI - fetch-and-increment
 TEST_TAS - test-and-set
 TEST_CAS - compare-and-swap
-TEST SWAP - atomic swap
+TEST_SWAP - atomic swap
 TEST_CAS_FAI - fetch-and-increment implemented using compare-and-swap
 
 ALTERNATE_SOCKETS is used for thread placement on the Niagara; if not set, hardware threads begin by being assinged to the same core; if set threads are disitributed evenly among the cores
