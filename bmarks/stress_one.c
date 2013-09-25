@@ -1,4 +1,6 @@
-
+/*
+ *  benchmark used exclusively to test some lock functions; not used for performance tests
+ */
 #include <assert.h>
 #include <getopt.h>
 #include <limits.h>
@@ -134,16 +136,10 @@ void *test(void *data)
   /* Wait on barrier */
   barrier_cross(d->barrier);
 
-  int lock_to_acq;
+  int lock_to_acq=0;
 
     lock_local_data local_d = local_th_data[d->id];
     while (stop == 0) {
-        //lock_to_acq= (int)(erand48(seed) * rand_max) + rand_min;
-        if (num_locks==1) {
-            lock_to_acq=0;
-        } else {
-            lock_to_acq=(int) my_random(&(seeds[0]),&(seeds[1]),&(seeds[2])) & rand_max;
-        }
         acquire_lock(&local_d,&the_lock);
 //#ifndef NO_DELAYS
         if (acq_duration > 0)
