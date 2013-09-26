@@ -1,4 +1,4 @@
-//array based lock
+//array based lock, as described in Herlihy and Shavit's "Art of Multiprocessor Programming"
 //basically identical to clh lock, but requires a bit more space
 #ifndef _ALOCK_H_
 #define _ALOCK_H_

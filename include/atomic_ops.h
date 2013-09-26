@@ -1,3 +1,6 @@
+/*
+ *  cross-platform interface for atomic operations
+ */
 #ifndef _ATOMIC_OPS_H_INCLUDED_
 #define _ATOMIC_OPS_H_INCLUDED_
 

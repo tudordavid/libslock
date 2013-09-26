@@ -1,3 +1,6 @@
+/*
+ *  common interface to access locking algorithms
+ */
 #ifdef USE_MCS_LOCKS
 #include "mcs.h"
 #elif defined(USE_HCLH_LOCKS)
