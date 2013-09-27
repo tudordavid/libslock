@@ -8,7 +8,7 @@ This repository provides:
 
 The package has been tested on x86_64 Intel and AMD machines, Tilera and Sparc architectures.
 
-A version of this code was used in the paper "Everything you always wanted to know about synchronization but were afraid to ask" (accessible here: http://sigops.org/sosp/sosp13/papers/p33-david.pdf).
+A version of this code was used in the paper **"Everything you always wanted to know about synchronization but were afraid to ask"** (accessible here: http://sigops.org/sosp/sosp13/papers/p33-david.pdf).
 
 Makefile parameters:
 
@@ -39,7 +39,7 @@ Can be passed using `PLATFORM` to the Makefile; the settings are specific to the
 
 Detailed descriptions of these platforms can be found in the paper.
 
-The `OPTERON_OPTIMIZE` option uses some of the Opteron-specific optimizations mentioned in the paper
+The `OPTERON_OPTIMIZE` option uses some of the Opteron-specific optimizations mentioned in the paper.
 Atomic operation to be tested
 -----------------------------
 For the benchmarks testing atomic operations, this parameter selects the desired operation. Can be passed to the Makefile using `PRIMITIVE`:
