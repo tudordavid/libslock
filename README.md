@@ -44,10 +44,10 @@ Atomic operation to be tested
 -----------------------------
 For the benchmarks testing atomic operations, this parameter selects the desired operation. Can be passed to the Makefile using `PRIMITIVE`:
 
-`TEST_FAI` - fetch-and-increment
-`TEST_TAS` - test-and-set
-`TEST_CAS` - compare-and-swap
-`TEST_SWAP` - atomic swap
-`TEST_CAS_FAI` - fetch-and-increment implemented using compare-and-swap
+- `TEST_FAI` - fetch-and-increment
+- `TEST_TAS` - test-and-set
+- `TEST_CAS` - compare-and-swap
+- `TEST_SWAP` - atomic swap
+- `TEST_CAS_FAI` - fetch-and-increment implemented using compare-and-swap
 
 `ALTERNATE_SOCKETS` is used for thread placement on the Niagara; if not set, hardware threads begin by being assinged to the same core; if set threads are disitributed evenly among the cores
