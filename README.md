@@ -14,10 +14,10 @@ Makefile parameters:
 
 Locking Algorithm
 -----------------
-Can be passed using `LOCK_VERSION` to the Makefile
+Can be passed using `LOCK_VERSION` to the Makefile:
 
-`USE_TTAS_LOCKS` - use test-and-test-and-set locks
-`USE_SPINLOCK_LOCKS` - use a test-and-set spinlokc
+- `USE_TTAS_LOCKS` - use test-and-test-and-set locks
+- `USE_SPINLOCK_LOCKS` - use a test-and-set spinlokc
     USE_TICKET_LOCKS - use ticket locks
     USE_HTICKET_LOCKS - use hierarchical ticket locks
     USE_MCS_LOCKS - use MCS locks
