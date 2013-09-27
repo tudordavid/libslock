@@ -30,14 +30,16 @@ Can be passed using `LOCK_VERSION` to the Makefile. `LOCK_VERSION` can take one 
 
 Platform
 --------
-Can be passed using `PLATFORM` to the Makefile; the settings are specific to the platforms we were using (topology, etc.); for other platforms the characteristics can be defined in `platform_defs.h`
+Can be passed using `PLATFORM` to the Makefile; the settings are specific to the platforms we were using (topology, etc.); for other platforms the characteristics can be defined in `platform_defs.h`. The pre-defined platforms are: 
 
-XEON
-OPTERON
-OPTERON_OPTIMIZE - use some of the Opteron-specific optimizations mentioned in the paper
-NIGARA
-TILERA
+- `XEON` - 8 x 10-core Intel sever
+- `OPTERON` - 8 x 6-core AMD server
+- `NIGARA` - 8-core SparcT2 machine
+- `TILERA` - 36-core Tilera machine
 
+Detailed descriptions of these platforms can be found in the paper.
+
+The `OPTERON_OPTIMIZE` option uses some of the Opteron-specific optimizations mentioned in the paper
 Atomic operation to be tested
 -----------------------------
 For the benchmarks testing atomic operations, this parameter selects the desired operation. Can be passed to the Makefile using `PRIMITIVE`:
