@@ -1,3 +1,6 @@
+Libslock
+=======
+
 This repository provides:
     - libslock, a cross-platform interface to atomic operations and other common operations 
     - implementations of a number of well-known locking algorithms 
@@ -10,23 +13,23 @@ A version of this code was used in the paper "Everything you always wanted to kn
 Makefile parameters:
 
 Locking Algorithm
-================
+-----------------
 Can be passed using LOCK_VERSION to the Makefile
 
-USE_TTAS_LOCKS - use test-and-test-and-set locks
-USE_SPINLOCK_LOCKS - use a test-and-set spinlokc
-USE_TICKET_LOCKS - use ticket locks
-USE_HTICKET_LOCKS - use hierarchical ticket locks
-USE_MCS_LOCKS - use MCS locks
-USE_CLH_LOCKS - use CLH locks
-USE_HCLH_LOCKS - use HCLH locks
-USE_ARRAY_LOCKS - use array locks
-USE_RW_LOCKS - use read-write locks (not used in paper, not optimized)
-USE_MUTEX_LOCKS - use the phtread mutex
+    USE_TTAS_LOCKS - use test-and-test-and-set locks
+    USE_SPINLOCK_LOCKS - use a test-and-set spinlokc
+    USE_TICKET_LOCKS - use ticket locks
+    USE_HTICKET_LOCKS - use hierarchical ticket locks
+    USE_MCS_LOCKS - use MCS locks
+    USE_CLH_LOCKS - use CLH locks
+    USE_HCLH_LOCKS - use HCLH locks
+    USE_ARRAY_LOCKS - use array locks
+    USE_RW_LOCKS - use read-write locks (not used in paper, not optimized)
+    USE_MUTEX_LOCKS - use the phtread mutex
 
 
 Platform
-========
+--------
 Can be passed using PLATFORM to the Makefile; the settings are specific to the platforms we were using (topology, etc.); for other platforms the characteristics can be defined in utils.h
 
 XEON
@@ -36,7 +39,7 @@ NIGARA
 TILERA
 
 Atomic operation to be tested
-=============================
+-----------------------------
 For the benchmarks testing atomic operations, this parameter selects the desired operation. Can be passed to the Makefile using PRIMITIVE
 
 TEST_FAI - fetch-and-increment
