@@ -14,23 +14,23 @@ Makefile parameters:
 
 Locking Algorithm
 -----------------
-Can be passed using `LOCK_VERSION` to the Makefile:
+Can be passed using `LOCK_VERSION` to the Makefile. `LOCK_VERSION` can take one of the following values:
 
 - `USE_TTAS_LOCKS` - use test-and-test-and-set locks
 - `USE_SPINLOCK_LOCKS` - use a test-and-set spinlokc
-    USE_TICKET_LOCKS - use ticket locks
-    USE_HTICKET_LOCKS - use hierarchical ticket locks
-    USE_MCS_LOCKS - use MCS locks
-    USE_CLH_LOCKS - use CLH locks
-    USE_HCLH_LOCKS - use HCLH locks
-    USE_ARRAY_LOCKS - use array locks
-    USE_RW_LOCKS - use read-write locks (not used in paper, not optimized)
-    USE_MUTEX_LOCKS - use the phtread mutex
+- `USE_TICKET_LOCKS` - use ticket locks
+- `USE_HTICKET_LOCKS` - use hierarchical ticket locks
+- `USE_MCS_LOCKS` - use MCS locks
+- `USE_CLH_LOCKS` - use CLH locks
+- `USE_HCLH_LOCKS` - use HCLH locks
+- `USE_ARRAY_LOCKS` - use array locks
+- `USE_RW_LOCKS` - use read-write locks (not used in paper, not optimized)
+- `USE_MUTEX_LOCKS` - use the phtread mutex
 
 
 Platform
 --------
-Can be passed using PLATFORM to the Makefile; the settings are specific to the platforms we were using (topology, etc.); for other platforms the characteristics can be defined in utils.h
+Can be passed using `PLATFORM` to the Makefile; the settings are specific to the platforms we were using (topology, etc.); for other platforms the characteristics can be defined in `platform_defs.h`
 
 XEON
 OPTERON
@@ -40,12 +40,12 @@ TILERA
 
 Atomic operation to be tested
 -----------------------------
-For the benchmarks testing atomic operations, this parameter selects the desired operation. Can be passed to the Makefile using PRIMITIVE
+For the benchmarks testing atomic operations, this parameter selects the desired operation. Can be passed to the Makefile using `PRIMITIVE`:
 
-TEST_FAI - fetch-and-increment
-TEST_TAS - test-and-set
-TEST_CAS - compare-and-swap
-TEST_SWAP - atomic swap
-TEST_CAS_FAI - fetch-and-increment implemented using compare-and-swap
+`TEST_FAI` - fetch-and-increment
+`TEST_TAS` - test-and-set
+`TEST_CAS` - compare-and-swap
+`TEST_SWAP` - atomic swap
+`TEST_CAS_FAI` - fetch-and-increment implemented using compare-and-swap
 
-ALTERNATE_SOCKETS is used for thread placement on the Niagara; if not set, hardware threads begin by being assinged to the same core; if set threads are disitributed evenly among the cores
+`ALTERNATE_SOCKETS` is used for thread placement on the Niagara; if not set, hardware threads begin by being assinged to the same core; if set threads are disitributed evenly among the cores
