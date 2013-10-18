@@ -1,4 +1,13 @@
-//ticket lock
+/* 
+ * File: ticket.h
+ * Authors: Vasileios Trigonakis <vasileios.trigonakis@epfl.ch>,
+ *          Tudor David <tudor.david@epfl.ch>
+ *
+ * Description: an implementation of ticket lock with:
+ *   - proportional back-off optimization
+ *   - prefetchw for write optimization for the AMD Opteron
+ *     magny-cours processors
+ */
 
 #ifndef _TICKET_H_
 #define _TICKET_H_
@@ -10,23 +19,32 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
-#ifndef __sparc__
-#include <numa.h>
+#if defined(PLATFORM_NUMA)
+#  include <numa.h>
 #endif
 #include <pthread.h>
 #include "utils.h"
 #include "atomic_ops.h"
 
+/* setting of the back-off based on the length of the queue */
+#define TICKET_BASE_WAIT 512
+#define TICKET_MAX_WAIT  4095
+#define TICKET_WAIT_NEXT 128
 
-#define MIN_DELAY 100
-#define MAX_DELAY 1000
-
+#define TICKET_ON_TW0_CLS 0	/* Put the head and the tail on separate 
+				 cache lines (O: not, 1: do)*/
 typedef struct ticketlock_t 
 {
   volatile uint32_t head;
+#if TICKET_ON_TW0_CLS == 1
+  uint8_t padding0[CACHE_LINE_SIZE - 4];
+#endif
   volatile uint32_t tail;
 #ifdef ADD_PADDING
-  uint8_t padding[CACHE_LINE_SIZE - 8];
+  uint8_t padding1[CACHE_LINE_SIZE - 8];
+#  if TICKET_ON_TW0_CLS == 1
+  uint8_t padding2[4];
+#  endif
 #endif
 } ticketlock_t;
 

@@ -1,5 +1,19 @@
+/* 
+ * File: ticket.h
+ * Authors: Vasileios Trigonakis <vasileios.trigonakis@epfl.ch>,
+ *          Tudor David <tudor.david@epfl.ch>
+ *
+ * Description: an implementation of ticket lock with:
+ *   - proportional back-off optimization
+ *   - prefetchw for write optimization for the AMD Opteron
+ *     magny-cours processors
+ */
+
 #include "ticket.h"
 
+
+/* enable measure contantion to collect statistics about the 
+ average queuing per lock acquisition */
 #if defined(MEASURE_CONTENTION)
 __thread uint64_t ticket_queued_total = 0;
 __thread uint64_t ticket_acquires = 0;
@@ -18,19 +32,20 @@ sub_abs(const uint32_t a, const uint32_t b)
     }
 }
 
-int ticket_trylock(ticketlock_t* lock) {
-    uint32_t me = lock->tail;
-    uint32_t me_new = me + 1;
-    uint64_t cmp = ((uint64_t) me << 32) + me_new; 
-    uint64_t cmp_new = ((uint64_t) me_new << 32) + me_new; 
-    uint64_t* la = (uint64_t*) lock;
-    if (CAS_U64(la,cmp,cmp_new)==cmp) return 0;
-    return 1;
+int
+ticket_trylock(ticketlock_t* lock) 
+{
+  uint32_t me = lock->tail;
+  uint32_t me_new = me + 1;
+  uint64_t cmp = ((uint64_t) me << 32) + me_new; 
+  uint64_t cmp_new = ((uint64_t) me_new << 32) + me_new; 
+  uint64_t* la = (uint64_t*) lock;
+  if (CAS_U64(la, cmp, cmp_new) == cmp) 
+    {
+      return 0;
+    }
+  return 1;
 }
-#define TICKET_BASE_WAIT 512
-#define TICKET_MAX_WAIT  4095
-#define TICKET_WAIT_NEXT 128
-
 
 void
 ticket_acquire(ticketlock_t* lock) 
@@ -91,7 +106,7 @@ ticket_acquire(ticketlock_t* lock)
   /* backoff proportional to the distance would make sense even without the PREFETCHW */
   /* however, I did some tests on the Niagara and it performed worse */
 
-#  if defined(OPTERON__) || defined(XEON)
+#  if defined(_x86_64__)
 #    if defined(MEASURE_CONTENTION)
   uint8_t once = 1;
   ticket_acquires++;
@@ -118,7 +133,6 @@ ticket_acquire(ticketlock_t* lock)
 	    }
 
 	  nop_rep(distance * wait);
-	  /* wait = (wait + TICKET_BASE_WAIT) & TICKET_MAX_WAIT; */
       	}
       else
 	{
@@ -128,7 +142,6 @@ ticket_acquire(ticketlock_t* lock)
       if (distance > 20)
       	{
       	  sched_yield();
-      	  /* pthread_yield(); */
       	}
     }
 #  else
@@ -140,43 +153,57 @@ ticket_acquire(ticketlock_t* lock)
 #endif	/* OPTERON_OPTIMIZE */
 }
 
-void ticket_release(ticketlock_t* lock) {
+void
+ticket_release(ticketlock_t* lock) 
+{
 #if defined(OPTERON_OPTIMIZE)
   PREFETCHW(lock);
 #endif	/* OPTERON */
-    COMPILER_BARRIER;
+  COMPILER_BARRIER;
   lock->head++;
 }
 
-ticketlock_t create_ticketlock() {
-    ticketlock_t the_lock;
-//    the_lock = (ticketlock_t*)malloc(sizeof(ticketlock_t));
-    the_lock.head=1;
-    the_lock.tail=0;
-    return the_lock;
+ticketlock_t
+create_ticketlock() 
+{
+  ticketlock_t the_lock;
+  the_lock.head=1;
+  the_lock.tail=0;
+  return the_lock;
 }
 
-int is_free_ticket(ticketlock_t* t){
-    if ((t->head - t->tail) == 1) return 1;
-    return 0;
-}
-
-void init_thread_ticketlocks(uint32_t thread_num) {
-    set_cpu(thread_num);
-}
-
-ticketlock_t* init_ticketlocks(uint32_t num_locks) {
-    ticketlock_t* the_locks;
-    the_locks = (ticketlock_t*) malloc(num_locks * sizeof(ticketlock_t));
-    uint32_t i;
-    for (i = 0; i < num_locks; i++) {
-        the_locks[i].head=1;
-        the_locks[i].tail=0;
+int
+is_free_ticket(ticketlock_t* t)
+{
+  if ((t->head - t->tail) == 1) 
+    {
+      return 1;
     }
-    return the_locks;
+  return 0;
 }
 
-void free_ticketlocks(ticketlock_t* the_locks) {
-    free(the_locks);
+void
+init_thread_ticketlocks(uint32_t thread_num) 
+{
+  set_cpu(thread_num);
+}
+
+ticketlock_t* init_ticketlocks(uint32_t num_locks) 
+{
+  ticketlock_t* the_locks;
+  the_locks = (ticketlock_t*) malloc(num_locks * sizeof(ticketlock_t));
+  uint32_t i;
+  for (i = 0; i < num_locks; i++) 
+    {
+      the_locks[i].head=1;
+      the_locks[i].tail=0;
+    }
+  return the_locks;
+}
+
+void
+free_ticketlocks(ticketlock_t* the_locks) 
+{
+  free(the_locks);
 }
 
