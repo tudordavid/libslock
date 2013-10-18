@@ -43,7 +43,7 @@ void ttas_lock(ttas_lock_t * the_lock, uint32_t* limit) {
     while ((*l)==1) {
         PREFETCHW(l);
     }
-    if (CAS_U8(&(the_lock->lock),UNLOCKED,LOCKED)==UNLOCKED) {
+    if (TAS_U8(&(the_lock->lock))==UNLOCKED) {
       return;
     } else {
       //backoff
@@ -78,6 +78,7 @@ int is_free_ttas(ttas_lock_t * the_lock){
 
 void ttas_unlock(ttas_lock_t *the_lock) 
 {
+    COMPILER_BARRIER;
   the_lock->lock=0;
 }
 

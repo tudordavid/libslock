@@ -62,6 +62,7 @@ void alock_unlock(array_lock_t* local_lock)
 #ifdef __tile__
 __sync_synchronize();
 #endif
+  COMPILER_BARRIER;
   lock->flags[(slot + 1)%lock->size].flag = 1;
 }
 
@@ -69,9 +70,6 @@ __sync_synchronize();
  *  Methods for array of locks manipulation
  */
 lock_shared_t** init_alock_array_global(uint32_t num_locks, uint32_t num_processes) {
-    DPRINT("Alock global initialization\n");
-    DPRINT("sizeof(flag_t) is %lu\n",sizeof(flag_t));
-    DPRINT("num processes is %u\n",num_processes);
     uint32_t i;
     lock_shared_t** the_locks = (lock_shared_t**) malloc(num_locks * sizeof(lock_shared_t*));
     for (i = 0; i < num_locks; i++) {
@@ -99,9 +97,6 @@ array_lock_t** init_alock_array_local(uint32_t thread_num, uint32_t num_locks, l
 }
 
 lock_shared_t* init_alock_global(uint32_t num_processes) {
-    DPRINT("Alock global initialization\n");
-    DPRINT("sizeof(flag_t) is %lu\n",sizeof(flag_t));
-    DPRINT("num processes is %u\n",num_processes);
     uint32_t i;
     lock_shared_t* the_lock = (lock_shared_t*) malloc(sizeof(lock_shared_t));
     bzero((void*)the_lock,sizeof(lock_shared_t));

@@ -32,13 +32,12 @@ volatile clh_qnode* clh_acquire(clh_lock *L, clh_qnode* I )
 }
 
 clh_qnode* clh_release(clh_qnode *my_qnode, clh_qnode * my_pred) {
+    COMPILER_BARRIER;
     my_qnode->locked=0;
     return my_pred;
 }
 
 clh_global_params* init_clh_array_global(uint32_t num_locks) {
-    DPRINT("sizeof(qnode) is %lu\n", sizeof(clh_qnode));
-    DPRINT("num_locks is %d\n", num_locks);
     clh_global_params* the_params;
     the_params = (clh_global_params*)malloc(num_locks * sizeof(clh_global_params));
     uint32_t i;
@@ -58,7 +57,6 @@ clh_local_params* init_clh_array_local(uint32_t thread_num, uint32_t num_locks) 
     uint32_t i;
     clh_local_params* local_params = (clh_local_params*)malloc(num_locks * sizeof(clh_local_params));
     for (i=0;i<num_locks;i++) {
-//        local_params[i]=(clh_local_params*)malloc(sizeof(clh_local_params));
         local_params[i].my_qnode = (clh_qnode*) malloc(sizeof(clh_qnode));
         local_params[i].my_qnode->locked=0;
         local_params[i].my_pred = NULL;
@@ -80,7 +78,6 @@ void end_clh_array_global(clh_global_params* the_locks, uint32_t size) {
 }
 
 clh_global_params init_clh_global() {
-    DPRINT("sizeof(qnode) is %lu\n", sizeof(clh_qnode));
     clh_global_params the_params;
     uint32_t i;
     the_params.the_lock=(clh_lock*)malloc(sizeof(clh_lock));
@@ -96,7 +93,6 @@ clh_local_params init_clh_local(uint32_t thread_num) {
     //init its qnodes
     uint32_t i;
     clh_local_params local_params;
-//        local_params[i]=(clh_local_params*)malloc(sizeof(clh_local_params));
     local_params.my_qnode = (clh_qnode*) malloc(sizeof(clh_qnode));
     local_params.my_qnode->locked=0;
     local_params.my_pred = NULL;

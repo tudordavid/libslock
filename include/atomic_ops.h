@@ -6,6 +6,7 @@
 
 #include <inttypes.h>
 
+#define COMPILER_BARRIER asm volatile("" ::: "memory")
 #ifdef __sparc__
 /*
  *  sparc code
@@ -22,6 +23,42 @@ uint8_t oldval;
     return oldval;
 }
 
+
+static inline unsigned long xchg32(volatile unsigned int *m, unsigned int val)
+{
+        unsigned long tmp1, tmp2;
+
+        __asm__ __volatile__(
+"       mov             %0, %1\n"
+"1:     lduw            [%4], %2\n"
+"       cas             [%4], %2, %0\n"
+"       cmp             %2, %0\n"
+"       bne,a,pn        %%icc, 1b\n"
+"        mov            %1, %0\n"
+        : "=&r" (val), "=&r" (tmp1), "=&r" (tmp2)
+        : "0" (val), "r" (m)
+        : "cc", "memory");
+        return val;
+}
+
+static inline unsigned long xchg64(volatile unsigned long *m, unsigned long val)                                                                                                             
+{
+     unsigned long tmp1, tmp2;
+
+    __asm__ __volatile__(
+"       mov             %0, %1\n"
+"1:     ldx             [%4], %2\n"
+"       casx            [%4], %2, %0\n"
+"       cmp             %2, %0\n"
+"       bne,a,pn        %%xcc, 1b\n"
+"        mov            %1, %0\n"
+    : "=&r" (val), "=&r" (tmp1), "=&r" (tmp2)
+    : "0" (val), "r" (m)
+    : "cc", "memory");
+    return val;
+}
+
+
 //Compare-and-swap
 #define CAS_PTR(a,b,c) atomic_cas_ptr(a,b,c)
 #define CAS_U8(a,b,c) atomic_cas_8(a,b,c)
@@ -32,7 +69,7 @@ uint8_t oldval;
 #define SWAP_PTR(a,b) atomic_swap_ptr(a,b)
 #define SWAP_U8(a,b) atomic_swap_8(a,b)
 #define SWAP_U16(a,b) atomic_swap_16(a,b)
-#define SWAP_U32(a,b) atomic_swap_32(a,b)
+#define SWAP_U32(a,b) xchg32(a,b)
 #define SWAP_U64(a,b) atomic_swap_64(a,b)
 //Fetch-and-increment
 #define FAI_U8(a) (atomic_inc_8_nv(a)-1)

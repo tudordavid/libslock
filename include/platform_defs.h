@@ -16,7 +16,7 @@ extern "C" {
 //the_cores - a mapping from the core ids as configured in the OS to physical cores (the OS might not alwas be configured corrrectly)
 //get_cluster - a function that given a core id returns the socket number ot belongs to
 
-#ifdef NIAGARA
+#ifdef SPARC
 #  define NUMBER_OF_SOCKETS 8
 #  define CORES_PER_SOCKET 8
 #  define CACHE_LINE_SIZE 64

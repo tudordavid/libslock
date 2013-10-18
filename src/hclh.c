@@ -116,8 +116,6 @@ qnode* hclh_release(qnode *my_qnode, qnode * my_pred, uint8_t th_cluster) {
 #define INIT_VAL 123
 
 hclh_global_params** init_hclh_array_global(uint32_t num_locks) {
-    DPRINT("sizeof(qnode) is %lu\n", sizeof(qnode));
-    DPRINT("num_locks is %d\n", num_locks);
     hclh_global_params** the_params;
     the_params = (hclh_global_params**)malloc(num_locks * sizeof(hclh_global_params*));
     uint32_t i;
@@ -192,8 +190,6 @@ void end_hclh_array_global(hclh_global_params** global_params, uint32_t size) {
 }
 
 hclh_global_params* init_hclh_global() {
-    DPRINT("sizeof(qnode) is %lu\n", sizeof(qnode));
-    DPRINT("num_locks is %d\n", num_locks);
     hclh_global_params* the_params;
     the_params=(hclh_global_params*)malloc(sizeof(hclh_global_params));
     the_params->local_queues = (local_queue**)malloc(NUMBER_OF_SOCKETS*sizeof(local_queue*));

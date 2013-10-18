@@ -144,6 +144,7 @@ void ticket_release(ticketlock_t* lock) {
 #if defined(OPTERON_OPTIMIZE)
   PREFETCHW(lock);
 #endif	/* OPTERON */
+    COMPILER_BARRIER;
   lock->head++;
 }
 

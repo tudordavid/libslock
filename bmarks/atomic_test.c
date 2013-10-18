@@ -17,7 +17,7 @@
 #define ALIGNMENT
 //#define TEST_CAS
 
-#ifdef __tile__
+#if defined (__tile__) || defined (__sparc__)
 typedef volatile uint32_t data_type;
 #else
 typedef volatile uint8_t data_type;
@@ -112,11 +112,11 @@ void *test(void *data)
     int entry;
    entry=0; 
     while (stop == 0) {
-//    if (num_entries==1) {
-            entry=0;
- //       } else {
-//           entry =(int) my_random(&(seeds[0]),&(seeds[1]),&(seeds[2])) & rand_max;
-//       }
+ //   if (num_entries==1) {
+ //           entry=0;
+  //      } else {
+  //          entry =(int) my_random(&(seeds[0]),&(seeds[1]),&(seeds[2])) & rand_max;
+  //      }
     //   entry = (int)(erand48(seed) * rand_max) + rand_min;
 #ifdef TEST_CAS
 //    do {
@@ -129,11 +129,20 @@ if ((d->num_operations)&1) {
 //    } while(res!=0);
 #elif defined(TEST_SWAP)
 //    do {
+#ifdef __sparc__
+if ((d->num_operations)&1) {
+    res = SWAP_U32(&(the_data[entry].data),0);
+} else {
+    res = SWAP_U32(&(the_data[entry].data),1);
+}
+
+#else
 if ((d->num_operations)&1) {
     res = SWAP_U8(&(the_data[entry].data),0);
 } else {
     res = SWAP_U8(&(the_data[entry].data),1);
 }
+#endif
     //MEM_BARRIER;
 //    } while(res!=0);
 #elif defined(TEST_CTR)

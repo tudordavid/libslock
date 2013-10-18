@@ -10,6 +10,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include "utils.h"
+#include "atomic_ops.h"
 
 typedef struct glock{
     volatile unsigned char local_read;

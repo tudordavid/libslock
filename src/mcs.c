@@ -71,8 +71,6 @@ int is_free_mcs(mcs_lock *L ){
 */
 
 mcs_global_params* init_mcs_array_global(uint32_t num_locks) {
-    DPRINT("Global mcs lock initialization\n");
-    DPRINT("sizeof(mcs_qnode) is %lu\n",sizeof(mcs_qnode));
     uint32_t i;
     mcs_global_params* the_locks = (mcs_global_params*)malloc(num_locks * sizeof(mcs_global_params));
     for (i=0;i<num_locks;i++) {
@@ -113,8 +111,6 @@ void end_mcs_array_global(mcs_global_params* the_locks, uint32_t size) {
 }
 
 mcs_global_params init_mcs_global() {
-    DPRINT("Global mcs lock initialization\n");
-    DPRINT("sizeof(mcs_qnode) is %lu\n",sizeof(mcs_qnode));
     uint32_t i;
     mcs_global_params the_lock;
     the_lock.the_lock=(mcs_lock*)malloc(sizeof(mcs_lock));
