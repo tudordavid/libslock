@@ -1,4 +1,17 @@
-/* Hierarchical ticket lock */
+/* 
+ * File: htlock.h
+ * Author: Vasileios Trigonakis <vasileios.trigonakis@epfl.ch>
+ *
+ * Description: an numa-aware hierarchical ticket lock
+ *  The htlock contains N local ticket locks (N = number of memory
+ *  nodes) and 1 global ticket lock. A thread always tries to acquire
+ *  the local ticket lock first. If there isn't any (local) available,
+ *  it enqueues for acquiring the global ticket lock and at the same
+ *  time it "gives" NB_TICKETS_LOCAL tickets to the local ticket lock, 
+ *  so that if more threads from the same socket try to acquire the lock,
+ *  they will enqueue on the local lock, without even accessing the
+ *  global one.
+ */
 
 #ifndef _HTICKET_H_
 #define _HTICKET_H_
@@ -6,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <malloc.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -21,8 +35,8 @@
 #include "utils.h"
 #include "atomic_ops.h"
 
-#define NB_TICKETS_LOCAL	128
-
+#define NB_TICKETS_LOCAL	128 /* max number of local tickets of local tickets
+				     before releasing global*/
 
 typedef struct htlock_global
 {

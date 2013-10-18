@@ -1,66 +1,62 @@
+/* 
+ * File: htlock.h
+ * Author: Vasileios Trigonakis <vasileios.trigonakis@epfl.ch>
+ *
+ * Description: an numa-aware hierarchical ticket lock
+ *  The htlock contains N local ticket locks (N = number of memory
+ *  nodes) and 1 global ticket lock. A thread always tries to acquire
+ *  the local ticket lock first. If there isn't any (local) available,
+ *  it enqueues for acquiring the global ticket lock and at the same
+ *  time it "gives" NB_TICKETS_LOCAL tickets to the local ticket lock, 
+ *  so that if more threads from the same socket try to acquire the lock,
+ *  they will enqueue on the local lock, without even accessing the
+ *  global one.
+ */
+
 #include "htlock.h"
 
-__thread uint32_t my_node, my_id;
+__thread uint32_t htlock_node_mine, htlock_id_mine;
 
 htlock_t* 
 create_htlock()
 {
   htlock_t* htl;
-#ifdef __sparc__
   htl = memalign(CACHE_LINE_SIZE, sizeof(htlock_t));
-  if (htl==NULL) 
+  if (htl == NULL) 
     {
       fprintf(stderr,"Error @ memalign : create htlock\n");
     }
-#else
-  if (posix_memalign((void**) &htl, CACHE_LINE_SIZE, sizeof(htlock_t)) < 0)
-    {
-      fprintf(stderr, "Error @ posix_memalign : create_htlock\n");
-    }
-#endif    
   assert(htl != NULL);
 
-#ifdef __sparc__
   htl->global = memalign(CACHE_LINE_SIZE, sizeof(htlock_global_t));
-  if (htl==NULL) 
+  if (htl == NULL) 
     {
       fprintf(stderr,"Error @ memalign : create htlock\n");
     }
-#else
-  if (posix_memalign((void**) &htl->global, CACHE_LINE_SIZE, sizeof(htlock_global_t)) < 0)
-    {
-      fprintf(stderr, "Error @ posix_memalign : create_htlock\n");
-    }
-#endif    
   assert(htl->global != NULL);
-
 
   uint32_t s;
   for (s = 0; s < NUMBER_OF_SOCKETS; s++)
     {
-
-#if defined(OPTERON) || defined(XEON)
+#if defined(PLATFORM_NUMA)
       numa_set_preferred(s);
       htl->local[s] = (htlock_local_t*) numa_alloc_onnode(sizeof(htlock_local_t), s);
 #else
       htl->local[s] = (htlock_local_t*) malloc(sizeof(htlock_local_t));
 #endif
+      htl->local[s]->cur = NB_TICKETS_LOCAL;
+      htl->local[s]->nxt = 0;
       assert(htl->local != NULL);
     }
 
-#if defined(OPTERON) || defined(XEON)
-  numa_set_preferred(my_node);
+#if defined(PLATFORM_NUMA)
+  numa_set_preferred(htlock_node_mine);
 #endif
 
   htl->global->cur = 0;
   htl->global->nxt = 0;
-  uint32_t n;
-  for (n = 0; n < NUMBER_OF_SOCKETS; n++)
-    {
-      htl->local[n]->cur = NB_TICKETS_LOCAL;
-      htl->local[n]->nxt = 0;
-    }
 
+  MEM_BARRIER;
   return htl;
 }
 
@@ -77,6 +73,7 @@ init_htlock(htlock_t* htl)
       htl->local[n]->cur = NB_TICKETS_LOCAL;
       htl->local[n]->nxt = 0;
     }
+  MEM_BARRIER;
 }
 
 void
@@ -84,8 +81,7 @@ init_thread_htlocks(uint32_t phys_core)
 {
   set_cpu(phys_core);
 
-#ifdef XEON
-  __sync_synchronize();
+#if defined(XEON)
   uint32_t real_core_num;
   uint32_t i;
   for (i = 0; i < (NUMBER_OF_SOCKETS * CORES_PER_SOCKET); i++) 
@@ -96,15 +92,13 @@ init_thread_htlocks(uint32_t phys_core)
 	  break;
 	}
     }
-  __sync_synchronize();
-  MEM_BARRIER;
-  my_id = real_core_num;
-  my_node = get_cluster(phys_core);
+  htlock_id_mine = real_core_num;
+  htlock_node_mine = get_cluster(phys_core);
 #else
-  my_id = phys_core;
-  my_node = get_cluster(phys_core);
+  htlock_id_mine = phys_core;
+  htlock_node_mine = get_cluster(phys_core);
 #endif
-  /* printf("core %02d / node %3d\n", phys_core, my_node); */
+  /* printf("core %02d / node %3d\n", phys_core, htlock_node_mine); */
 }
 
 uint32_t
@@ -124,27 +118,18 @@ is_free_hticket(htlock_t* htl)
 static htlock_t* 
 create_htlock_no_alloc(htlock_t* htl, htlock_local_t* locals[NUMBER_OF_SOCKETS], size_t offset)
 {
-#ifdef __sparc__
   htl->global = memalign(CACHE_LINE_SIZE, sizeof(htlock_global_t));
-  if (htl==NULL) 
+  if (htl == NULL) 
     {
       fprintf(stderr,"Error @ memalign : create htlock\n");
     }
-#else
-  if (posix_memalign((void**) &htl->global, CACHE_LINE_SIZE, sizeof(htlock_global_t)) < 0)
-    {
-      fprintf(stderr, "Error @ posix_memalign : create_htlock\n");
-    }
-#endif    
   assert(htl->global != NULL);
-
 
   uint32_t s;
   for (s = 0; s < NUMBER_OF_SOCKETS; s++)
     {
       htl->local[s] = locals[s] + offset;
     }
-
 
   htl->global->cur = 0;
   htl->global->nxt = 0;
@@ -155,6 +140,7 @@ create_htlock_no_alloc(htlock_t* htl, htlock_local_t* locals[NUMBER_OF_SOCKETS],
       htl->local[n]->nxt = 0;
     }
 
+  MEM_BARRIER;
   return htl;
 }
 
@@ -162,17 +148,11 @@ htlock_t*
 init_htlocks(uint32_t num_locks)
 {
   htlock_t* htls;
-#ifdef __sparc__
-    htls = memalign(CACHE_LINE_SIZE, num_locks * sizeof(htlock_t));
-    if (htls==NULL) {
+  htls = memalign(CACHE_LINE_SIZE, num_locks * sizeof(htlock_t));
+  if (htls == NULL) 
+    {
       fprintf(stderr, "Error @ memalign : init_htlocks\n");
     }
-#else
-  if (posix_memalign((void**) &htls, 64, num_locks * sizeof(htlock_t)) < 0)
-    {
-      fprintf(stderr, "Error @ posix_memalign : init_htlocks\n");
-    }
-#endif   
   assert(htls != NULL);
 
 
@@ -182,17 +162,16 @@ init_htlocks(uint32_t num_locks)
   uint32_t n;
   for (n = 0; n < NUMBER_OF_SOCKETS; n++)
     {
-#if defined(OPTERON) || defined(XEON)
+#if defined(PLATFORM_NUMA)
       numa_set_preferred(n);
-      _mm_mfence();
 #endif
       locals[n] = (htlock_local_t*) calloc(alloc_locks, sizeof(htlock_local_t));
-      //numa_alloc_onnode(num_locks * sizeof(htlock_local_t), n);
+      *((volatile int*) locals[n]) = 33;
       assert(locals[n] != NULL);
     }
 
 #if defined(OPTERON) || defined(XEON)
-  numa_set_preferred(my_node);
+  numa_set_preferred(htlock_node_mine);
 #endif
 
   uint32_t i;
@@ -299,25 +278,11 @@ htlock_wait_global(htlock_local_t* lock, const uint32_t ticket)
 void
 htlock_lock(htlock_t* l)
 {
-  htlock_local_t* localp = l->local[my_node];
+  htlock_local_t* localp = l->local[htlock_node_mine];
   int32_t local_ticket;
 
-  /* _mm_clflush(localp); */
-
-  ticks s, e;
-
  again_local:
-  /* if (my_id == 32) */
-  /*   { */
-  /*     s = getticks(); */
-  /*   } */
   local_ticket = DAF_U32(&localp->nxt);
-  /* if (my_id == 32) */
-  /*   { */
-  /*     e = getticks(); */
-  /*     printf("%5llu - ", e - s - 74); */
-  /*   } */
-  /* only the guy which gets local_ticket == -1 is allowed to share tickets */
   if (local_ticket < -1)	
     {
       PAUSE;
@@ -343,7 +308,6 @@ htlock_lock(htlock_t* l)
       htlock_global_t* globalp = l->global;
       uint32_t global_ticket = FAI_U32(&globalp->nxt);
 
-      /* htlock_wait_ticket((htlock_local_t*) globalp, global_ticket); */
       htlock_wait_global((htlock_local_t*) globalp, global_ticket);
     }
 }
@@ -351,7 +315,7 @@ htlock_lock(htlock_t* l)
 void
 htlock_release(htlock_t* l)
 {
-  htlock_local_t* localp = l->local[my_node];
+  htlock_local_t* localp = l->local[htlock_node_mine];
 #if defined(OPTERON_OPTIMIZE)
   PREFETCHW(localp);
 #endif
