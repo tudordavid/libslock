@@ -1,3 +1,11 @@
+/* 
+ * File: htlock_test.c
+ * Author: Vasileios Trigonakis <vasileios.trigonakis@epfl.ch>
+ *
+ * Description: tests the hierarchical ticket lock (both normal
+ *   lock function and the try_lock)
+ */
+
 #include <assert.h>
 #include <getopt.h>
 #include <limits.h>
@@ -19,13 +27,15 @@
 
 #define DEFAULT_NUM_ENTRIES 1024
 #define DEFAULT_NUM_THREADS 1
-#define DEFAULT_DURATION 10000
+#define DEFAULT_DURATION 2000
 #define DEFAULT_SEED 0
+#define DEFAULT_CORE_TRY_LOCK 8
 
 int num_entries;
 int num_threads;
 int duration;
-int seed;
+int num_cores_try_lock;
+
 __thread uint32_t phys_id;
 __thread uint32_t cluster_id;
 static volatile int stop;
@@ -104,7 +114,7 @@ test(void *data)
   while (stop == 0)
     {
 
-      if (d->id == 0)
+      if (d->id < num_cores_try_lock)
 	{
 	  success = htlock_trylock(htls);
 	}
@@ -118,7 +128,7 @@ test(void *data)
 	  asm volatile("NOP");
 	  atomic_counter[0]++;
 	  asm volatile("NOP");
-	  if (d->id == 0)
+	  if (d->id < num_cores_try_lock)
 	    {
 	      htlock_release_try(htls);
 	    }
@@ -130,9 +140,9 @@ test(void *data)
 	}
     }
 
-  if (d->id == 0)
+  if (d->id < num_cores_try_lock)
     {
-      printf("\nmy trylock did: %u\n", d->num_operations);
+      printf("[%02d] try_lock completed: %lu\n", d->id, d->num_operations);
     }
 
   /* Free any local data if necessary */ 
@@ -142,25 +152,27 @@ test(void *data)
 
 void catcher(int sig)
 {
-    static int nb = 0;
-    printf("CAUGHT SIGNAL %d\n", sig);
-    if (++nb >= 3)
-        exit(1);
+  static int nb = 0;
+  printf("CAUGHT SIGNAL %d\n", sig);
+  if (++nb >= 3)
+    exit(1);
 }
 
 
-int main(int argc, char* const argv[])
+int
+main(int argc, char* const argv[])
 {
-set_cpu(the_cores[0]);
-  struct option long_options[] = {
-    // These options don't set a flag
-    {"help",                      no_argument,       NULL, 'h'},
-    {"entries",                   required_argument, NULL, 'e'},
-    {"duration",                  required_argument, NULL, 'd'},
-    {"num-threads",               required_argument, NULL, 'n'},
-    {"seed",                      required_argument, NULL, 's'},
-    {NULL, 0, NULL, 0}
-  };
+  set_cpu(the_cores[0]);
+  struct option long_options[] = 
+    {
+      // These options don't set a flag
+      {"help",                      no_argument,       NULL, 'h'},
+      {"entries",                   required_argument, NULL, 'e'},
+      {"duration",                  required_argument, NULL, 'd'},
+      {"num-threads",               required_argument, NULL, 'n'},
+      {"try-lock",                  required_argument, NULL, 't'},
+      {NULL, 0, NULL, 0}
+    };
 
 #ifdef PRINT_OUTPUT
   printf("sizeof(htlock_global_t) = %lu\n", sizeof(htlock_global_t));
@@ -177,62 +189,63 @@ set_cpu(the_cores[0]);
  
   num_entries = DEFAULT_NUM_ENTRIES;
   num_threads = DEFAULT_NUM_THREADS;
+  num_cores_try_lock = DEFAULT_CORE_TRY_LOCK;
   duration = DEFAULT_DURATION;
-  seed = DEFAULT_SEED;
   sigset_t block_set;
 
-  while(1) {
-    i = 0;
-    c = getopt_long(argc, argv, "he:d:n:s", long_options, &i);
+  while(1) 
+    {
+      i = 0;
+      c = getopt_long(argc, argv, "he:d:n:t:", long_options, &i);
 
-    if(c == -1)
-      break;
+      if(c == -1)
+	break;
 
-    if(c == 0 && long_options[i].flag == 0)
-      c = long_options[i].val;
+      if(c == 0 && long_options[i].flag == 0)
+	c = long_options[i].val;
 
-    switch(c) {
-    case 0:
-      /* Flag is automatically set */
-      break;
-    case 'h':
-      printf("htlock test\n"
-	     "\n"
-	     "Usage:\n"
-	     "  htlock_test [options...]\n"
-	     "\n"
-	     "Options:\n"
-	     "  -h, --help\n"
-	     "        Print this message\n"
-	     "  -e, --entires <int>\n"
-	     "        Number of entries in the test (default=" XSTR(DEFAULT_NUM_LOCKS) ")\n"
-	     "  -d, --duration <int>\n"
-	     "        Test duration in milliseconds (0=infinite, default=" XSTR(DEFAULT_DURATION) ")\n"
-	     "  -n, --num-threads <int>\n"
-	     "        Number of threads (default=" XSTR(DEFAULT_NUM_THREADS) ")\n"
-	     "  -s, --seed <int>\n"
-	     "        RNG seed (0=time-based, default=" XSTR(DEFAULT_SEED) ")\n"
-	     );
-      exit(0);
-    case 'e':
-      num_entries = atoi(optarg);
-      break;
-    case 'd':
-      duration = atoi(optarg);
-      break;
-    case 'n':
-      num_threads = atoi(optarg);
-      break;
-    case 's':
-      seed = atoi(optarg);
-      break;
-    case '?':
-      printf("Use -h or --help for help\n");
-      exit(0);
-    default:
-      exit(1);
+      switch(c) {
+      case 0:
+	/* Flag is automatically set */
+	break;
+      case 'h':
+	printf("htlock test\n"
+	       "\n"
+	       "Usage:\n"
+	       "  htlock_test [options...]\n"
+	       "\n"
+	       "Options:\n"
+	       "  -h, --help\n"
+	       "        Print this message\n"
+	       "  -e, --entries <int>\n"
+	       "        Number of entries in the test (default=" XSTR(DEFAULT_NUM_LOCKS) ")\n"
+	       "  -d, --duration <int>\n"
+	       "        Test duration in milliseconds (0=infinite, default=" XSTR(DEFAULT_DURATION) ")\n"
+	       "  -n, --num-threads <int>\n"
+	       "        Number of threads (default=" XSTR(DEFAULT_NUM_THREADS) ")\n"
+	       "  -t, --try-lock <int>\n"
+	       "        Number of cores working with try-locks (" XSTR(DEFAULT_CORE_TRY_LOCK)")\n"
+	       );
+	exit(0);
+      case 'e':
+	num_entries = atoi(optarg);
+	break;
+      case 'd':
+	duration = atoi(optarg);
+	break;
+      case 'n':
+	num_threads = atoi(optarg);
+	break;
+      case 't':
+	num_cores_try_lock = atoi(optarg);
+	break;
+      case '?':
+	printf("Use -h or --help for help\n");
+	exit(0);
+      default:
+	exit(1);
+      }
     }
-  }
 
   assert(duration >= 0);
   assert(num_entries >= 1);
@@ -242,6 +255,7 @@ set_cpu(the_cores[0]);
   printf("Number of entries   : %d\n", num_entries);
   printf("Duration       : %d\n", duration);
   printf("Number of threads     : %d\n", num_threads);
+  printf("Number of trylock threads     : %d\n", num_cores_try_lock);
   printf("Type sizes     : int=%d/long=%d/ptr=%d\n",
 	 (int)sizeof(int),
 	 (int)sizeof(long),
@@ -269,10 +283,7 @@ set_cpu(the_cores[0]);
       exit(1);
     }
 
-  if (seed == 0)
-    srand((int)time(NULL));
-  else
-    srand(seed);
+  srand((int)time(NULL));
 
   stop = 0;
   /* Access set from all threads */
@@ -290,7 +301,9 @@ set_cpu(the_cores[0]);
 #endif
   for (i = 0; i < num_threads; i++) 
     {
+#ifdef PRINT_OUTPUT
       printf("%d, ", i);
+#endif
       data[i].id = i;
       data[i].num_operations = 0;
       data[i].seed = rand();
