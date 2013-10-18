@@ -1,4 +1,32 @@
-//this algo is taken from "a hierarchical clh queue lock" by luchangco et al.
+/*
+* File: hclh.c
+* Author: Tudor David <tudor.david@epfl.ch>
+*
+* Description: 
+*      Hierarchical CLH lock implementation
+*
+* The MIT License (MIT)
+*
+* Copyright (c) 2013 Tudor David
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy of
+* this software and associated documentation files (the "Software"), to deal in
+* the Software without restriction, including without limitation the rights to
+* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Software, and to permit persons to whom the Software is furnished to do so,
+* subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 #include "hclh.h"
 
 uint16_t wait_for_grant_or_cluster_master(volatile qnode *q, uint8_t my_cluster) {
@@ -19,7 +47,6 @@ uint16_t wait_for_grant_or_cluster_master(volatile qnode *q, uint8_t my_cluster)
 }
 
 volatile qnode * hclh_acquire(local_queue *lq, global_queue *gq, qnode *my_qnode) {
-  //splice my_qnode into local queue
   volatile qnode* my_pred;
   do 
     {
@@ -34,15 +61,12 @@ volatile qnode * hclh_acquire(local_queue *lq, global_queue *gq, qnode *my_qnode
       uint16_t i_own_lock = wait_for_grant_or_cluster_master(my_pred, my_qnode->fields.cluster_id);
       if (i_own_lock) 
 	{
-	  //I have the lock; return qnode just released by previous owner
 	  return my_pred;
 	}
     }
-  //at this point, I'm cluster master. Wait to allow time for other acquireres to show up.
   PAUSE;  PAUSE;
 
   volatile qnode * local_tail;
-  //splice local queue into global queue
   do 
     {
 #if defined(OPTERON_OPTIMIZE)
@@ -54,9 +78,7 @@ volatile qnode * hclh_acquire(local_queue *lq, global_queue *gq, qnode *my_qnode
       PAUSE;
     } while(CAS_PTR(gq, my_pred, local_tail)!=my_pred);
 
-  //inform successor that it is the new master
   local_tail->fields.tail_when_spliced = 1;
-  //wait for predecessor to release lock
 #if defined(OPTERON_OPTIMIZE)
   PREFETCHW(my_pred);
 #endif	/* OPTERON_OPTIMIZE */
@@ -67,7 +89,6 @@ volatile qnode * hclh_acquire(local_queue *lq, global_queue *gq, qnode *my_qnode
     PREFETCHW(my_pred);
 #endif	/* OPTERON_OPTIMIZE */
   }
-  //I have the lock. return qnode just released by previous owner for next lock access
   return my_pred;
 }
 
