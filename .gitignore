@@ -1,0 +1,16 @@
+/*.o
+/*~
+/atomic_latency
+/atomic_success
+/atomic_test
+/bank
+/bank_one
+/bank_simple
+/htlock_test
+/individual_ops
+/libsync.a
+/stress_latency
+/stress_one
+/stress_test
+/trylock_test
+/uncontended
