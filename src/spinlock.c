@@ -59,7 +59,7 @@ spinlock_lock(spinlock_lock_t* the_lock, uint32_t* limits)
     /*}*/
 /*#else  [> !OPTERON_OPTIMIZE <]*/
   volatile spinlock_lock_data_t* l = &(the_lock->lock);
-  while (TAS_U8(l) == LOCKED) 
+  while (TAS_U8(l)) 
     {
       PAUSE;
     } 
