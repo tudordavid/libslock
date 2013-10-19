@@ -1,31 +1,31 @@
 /*
-* File: mcs.h
-* Author: Tudor David <tudor.david@epfl.ch>
-*
-* Description: 
-*      Implementation of an MCS lock
-*
-* The MIT License (MIT)
-*
-* Copyright (c) 2013 Tudor David
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * File: mcs.h
+ * Author: Tudor David <tudor.david@epfl.ch>
+ *
+ * Description: 
+ *      Implementation of an MCS lock
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2013 Tudor David
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 
 
@@ -69,12 +69,10 @@ typedef struct mcs_global_params {
 #endif
 } mcs_global_params;
 
-//initializes the lock
-//mcs_lock *init_mcs(uint32_t capacity, int do_global_init, char *key);
 
 /*
-    Methods for easy lock array manipulation
-*/
+   Methods for easy lock array manipulation
+   */
 
 mcs_global_params* init_mcs_array_global(uint32_t num_locks);
 
@@ -84,8 +82,8 @@ void end_mcs_array_local(mcs_qnode** the_qnodes, uint32_t size);
 
 void end_mcs_array_global(mcs_global_params* the_locks, uint32_t size);
 /*
-    single lock manipulation
-*/
+   single lock manipulation
+   */
 
 mcs_global_params init_mcs_global();
 
@@ -95,10 +93,12 @@ void end_mcs_local(mcs_qnode* the_qnodes);
 
 void end_mcs_global(mcs_global_params the_locks);
 
-//lock
+/*
+ *  Acquire and release methods
+ */
+
 void mcs_acquire(mcs_lock *the_lock, mcs_qnode_ptr I);
 
-//unlock
 void mcs_release(mcs_lock *the_lock, mcs_qnode_ptr I);
 
 int is_free_mcs(mcs_lock *L );

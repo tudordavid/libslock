@@ -1,31 +1,31 @@
 /*
-* File: atomic_ops.h
-* Author: Tudor David <tudor.david@epfl.ch>
-*
-* Description: 
-*      Cross-platform interface to common atomic operations
-*
-* The MIT License (MIT)
-*
-* Copyright (c) 2013 Tudor David
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * File: atomic_ops.h
+ * Author: Tudor David <tudor.david@epfl.ch>
+ *
+ * Description: 
+ *      Cross-platform interface to common atomic operations
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2013 Tudor David
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 
 
@@ -45,45 +45,45 @@
 
 //test-and-set uint8_t
 static inline uint8_t tas_uint8(volatile uint8_t *addr) {
-uint8_t oldval;
-  __asm__ __volatile__("ldstub %1,%0"
-        : "=r"(oldval), "=m"(*addr)
-        : "m"(*addr) : "memory");
+    uint8_t oldval;
+    __asm__ __volatile__("ldstub %1,%0"
+            : "=r"(oldval), "=m"(*addr)
+            : "m"(*addr) : "memory");
     return oldval;
 }
 
 
 static inline unsigned long xchg32(volatile unsigned int *m, unsigned int val)
 {
-        unsigned long tmp1, tmp2;
+    unsigned long tmp1, tmp2;
 
-        __asm__ __volatile__(
-"       mov             %0, %1\n"
-"1:     lduw            [%4], %2\n"
-"       cas             [%4], %2, %0\n"
-"       cmp             %2, %0\n"
-"       bne,a,pn        %%icc, 1b\n"
-"        mov            %1, %0\n"
-        : "=&r" (val), "=&r" (tmp1), "=&r" (tmp2)
-        : "0" (val), "r" (m)
-        : "cc", "memory");
-        return val;
+    __asm__ __volatile__(
+            "       mov             %0, %1\n"
+            "1:     lduw            [%4], %2\n"
+            "       cas             [%4], %2, %0\n"
+            "       cmp             %2, %0\n"
+            "       bne,a,pn        %%icc, 1b\n"
+            "        mov            %1, %0\n"
+            : "=&r" (val), "=&r" (tmp1), "=&r" (tmp2)
+            : "0" (val), "r" (m)
+            : "cc", "memory");
+    return val;
 }
 
 static inline unsigned long xchg64(volatile unsigned long *m, unsigned long val)                                                                                                             
 {
-     unsigned long tmp1, tmp2;
+    unsigned long tmp1, tmp2;
 
     __asm__ __volatile__(
-"       mov             %0, %1\n"
-"1:     ldx             [%4], %2\n"
-"       casx            [%4], %2, %0\n"
-"       cmp             %2, %0\n"
-"       bne,a,pn        %%xcc, 1b\n"
-"        mov            %1, %0\n"
-    : "=&r" (val), "=&r" (tmp1), "=&r" (tmp2)
-    : "0" (val), "r" (m)
-    : "cc", "memory");
+            "       mov             %0, %1\n"
+            "1:     ldx             [%4], %2\n"
+            "       casx            [%4], %2, %0\n"
+            "       cmp             %2, %0\n"
+            "       bne,a,pn        %%xcc, 1b\n"
+            "        mov            %1, %0\n"
+            : "=&r" (val), "=&r" (tmp1), "=&r" (tmp2)
+            : "0" (val), "r" (m)
+            : "cc", "memory");
     return val;
 }
 
@@ -182,68 +182,68 @@ static inline unsigned long xchg64(volatile unsigned long *m, unsigned long val)
 //Swap pointers
 static inline void* swap_pointer(volatile void* ptr, void *x) {
 #  ifdef __i386__
-   __asm__ __volatile__("xchgl %0,%1"
-        :"=r" ((unsigned) x)
-        :"m" (*(volatile unsigned *)ptr), "0" (x)
-        :"memory");
+    __asm__ __volatile__("xchgl %0,%1"
+            :"=r" ((unsigned) x)
+            :"m" (*(volatile unsigned *)ptr), "0" (x)
+            :"memory");
 
-  return x;
+    return x;
 #  elif defined(__x86_64__)
-  __asm__ __volatile__("xchgq %0,%1"
-        :"=r" ((unsigned long long) x)
-        :"m" (*(volatile long long *)ptr), "0" ((unsigned long long) x)
-        :"memory");
+    __asm__ __volatile__("xchgq %0,%1"
+            :"=r" ((unsigned long long) x)
+            :"m" (*(volatile long long *)ptr), "0" ((unsigned long long) x)
+            :"memory");
 
-  return x;
+    return x;
 #  endif
 }
 
 //Swap uint64_t
 static inline uint64_t swap_uint64(volatile uint64_t* target,  uint64_t x) {
-  __asm__ __volatile__("xchgq %0,%1"
-        :"=r" ((uint64_t) x)
-        :"m" (*(volatile uint64_t *)target), "0" ((uint64_t) x)
-        :"memory");
+    __asm__ __volatile__("xchgq %0,%1"
+            :"=r" ((uint64_t) x)
+            :"m" (*(volatile uint64_t *)target), "0" ((uint64_t) x)
+            :"memory");
 
-  return x;
+    return x;
 }
 
 //Swap uint32_t
 static inline uint32_t swap_uint32(volatile uint32_t* target,  uint32_t x) {
-  __asm__ __volatile__("xchgl %0,%1"
-        :"=r" ((uint32_t) x)
-        :"m" (*(volatile uint32_t *)target), "0" ((uint32_t) x)
-        :"memory");
+    __asm__ __volatile__("xchgl %0,%1"
+            :"=r" ((uint32_t) x)
+            :"m" (*(volatile uint32_t *)target), "0" ((uint32_t) x)
+            :"memory");
 
-  return x;
+    return x;
 }
 
 //Swap uint16_t
 static inline uint16_t swap_uint16(volatile uint16_t* target,  uint16_t x) {
-  __asm__ __volatile__("xchgw %0,%1"
-        :"=r" ((uint16_t) x)
-        :"m" (*(volatile uint16_t *)target), "0" ((uint16_t) x)
-        :"memory");
+    __asm__ __volatile__("xchgw %0,%1"
+            :"=r" ((uint16_t) x)
+            :"m" (*(volatile uint16_t *)target), "0" ((uint16_t) x)
+            :"memory");
 
-  return x;
+    return x;
 }
 
 //Swap uint8_t
 static inline uint8_t swap_uint8(volatile uint8_t* target,  uint8_t x) {
-  __asm__ __volatile__("xchgb %0,%1"
-        :"=r" ((uint8_t) x)
-        :"m" (*(volatile uint8_t *)target), "0" ((uint8_t) x)
-        :"memory");
+    __asm__ __volatile__("xchgb %0,%1"
+            :"=r" ((uint8_t) x)
+            :"m" (*(volatile uint8_t *)target), "0" ((uint8_t) x)
+            :"memory");
 
-  return x;
+    return x;
 }
 
 //test-and-set uint8_t
 static inline uint8_t tas_uint8(volatile uint8_t *addr) {
-uint8_t oldval;
-  __asm__ __volatile__("xchgb %0,%1"
-        : "=q"(oldval), "=m"(*addr)
-        : "0"((unsigned char) 0xff), "m"(*addr) : "memory");
+    uint8_t oldval;
+    __asm__ __volatile__("xchgb %0,%1"
+            : "=q"(oldval), "=m"(*addr)
+            : "0"((unsigned char) 0xff), "m"(*addr) : "memory");
     return (uint8_t) oldval;
 }
 

@@ -1,31 +1,31 @@
 /*
-* File: lock_if.h
-* Author: Tudor David <tudor.david@epfl.ch>
-*
-* Description: 
-*      Common interface to various locking algorithms;
-*
-* The MIT License (MIT)
-*
-* Copyright (c) 2013 Tudor David
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * File: lock_if.h
+ * Author: Tudor David <tudor.david@epfl.ch>
+ *
+ * Description: 
+ *      Common interface to various locking algorithms;
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2013 Tudor David
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 
 
@@ -233,32 +233,6 @@ static inline void acquire_read(lock_local_data* local_d, lock_global_data* glob
 #endif
 }
 
-/*
- *static inline void acquire_lock(unsigned int index, local_data local_d, global_data the_locks) {
- *#ifdef USE_MCS_LOCKS
- *    mcs_acquire(the_locks[index].the_lock,local_d[index]);
- *#elif defined(USE_HCLH_LOCKS)
- *    local_d[index]->my_pred= (qnode*) hclh_acquire(local_d[index]->my_queue,the_locks[index]->shared_queue,local_d[index]->my_qnode);
- *#elif defined(USE_TTAS_LOCKS)
- *    ttas_lock(the_locks, local_d, index);
- *#elif defined(USE_SPINLOCK_LOCKS)
- *    spinlock_lock(the_locks, local_d, index);
- *#elif defined(USE_ARRAY_LOCKS)
- *    alock_lock(local_d[index]);
- *#elif defined(USE_CLH_LOCKS)
- *    local_d[index].my_pred= (clh_qnode*) clh_acquire(the_locks[index].the_lock, local_d[index].my_qnode);
- *#elif defined(USE_RW_LOCKS)
- *    write_acquire(&the_locks[index],&(local_d[index]));
- *#elif defined(USE_TICKET_LOCKS)
- *    ticket_acquire(&the_locks[index]);
- *#elif defined(USE_MUTEX_LOCKS)
- *    pthread_mutex_lock(&(the_locks[index]));
- *#elif defined(USE_HTICKET_LOCKS)
- *    htlock_lock(&the_locks[index]);
- *#endif
- *}
- */
-
 
 static inline void release_lock(int cluster_id, lock_local_data *local_d, lock_global_data *global_d) {
 #ifdef USE_MCS_LOCKS
@@ -335,32 +309,6 @@ static inline void release_read(int cluster_id, lock_local_data *local_d, lock_g
 
 }
 
-/*
- *static inline void release_lock(int index, int cluster_id, local_data local_d, global_data the_locks) {
- *#ifdef USE_MCS_LOCKS
- *    mcs_release(the_locks[index].the_lock,local_d[index]);
- *#elif defined(USE_HCLH_LOCKS)
- *    local_d[index]->my_qnode=hclh_release(local_d[index]->my_qnode,local_d[index]->my_pred,cluster_id);
- *#elif defined(USE_TTAS_LOCKS)
- *    ttas_unlock(the_locks, index);
- *#elif defined(USE_SPINLOCK_LOCKS)
- *    spinlock_unlock(the_locks, index);
- *#elif defined(USE_ARRAY_LOCKS)
- *    alock_unlock(local_d[index]);
- *#elif defined(USE_CLH_LOCKS)
- *    local_d[index].my_qnode=clh_release(local_d[index].my_qnode, local_d[index].my_pred);
- *#elif defined(USE_RW_LOCKS)
- *    write_release(&the_locks[index]); 
- *#elif defined(USE_TICKET_LOCKS)
- *    ticket_release(&the_locks[index]);
- *#elif defined(USE_MUTEX_LOCKS)
- *    pthread_mutex_unlock(&(the_locks[index]));
- *#elif defined(USE_HTICKET_LOCKS)
- *    htlock_release(&the_locks[index]);
- *#endif
- *
- *}
- */
 
 
 static inline local_data init_lock_array_local(int core_to_pin, int num_locks, global_data the_locks){
@@ -425,15 +373,15 @@ static inline void free_lock_local(lock_local_data local_d){
 #elif defined(USE_HCLH_LOCKS)
     end_hclh_local(local_d);
 #elif defined(USE_TTAS_LOCKS)
-//    end_ttas_array_local(local_d);
+    //    end_ttas_array_local(local_d);
 #elif defined(USE_SPINLOCK_LOCKS)
-//    end_spinlock_array_local(local_d);
+    //    end_spinlock_array_local(local_d);
 #elif defined(USE_ARRAY_LOCKS)
     end_alock_local(local_d);
 #elif defined(USE_CLH_LOCKS)
     end_clh_local(local_d);
 #elif defined(USE_RW_LOCKS)
-//    end_rw_ttaslocal(local_d);
+    //    end_rw_ttaslocal(local_d);
 #elif defined(USE_TICKET_LOCKS)
     //nothing to be done
 #elif defined(USE_MUTEX_LOCKS)
@@ -583,64 +531,29 @@ static inline void free_lock_global(lock_global_data the_lock) {
 static inline int na_trylock( lock_local_data* local_d, lock_global_data* global_d) {
 #ifdef USE_MCS_LOCKS
     return mcs_trylock(global_d->the_lock,*local_d);
-    //if (is_free_mcs(the_locks[index])) {
-    //    mcs_acquire(the_locks[index],local_d[index]);
-    //    return 0;
-    //}
-   //return 1;
 #elif defined(USE_HCLH_LOCKS)
     lock_local_data ld = *local_d;
     if (is_free_hclh(ld->my_queue,(*global_d)->shared_queue,ld->my_qnode)) {
         (*local_d)->my_pred= (qnode*) hclh_acquire(ld->my_queue,(*global_d)->shared_queue,ld->my_qnode);
         return 0;
     }
-   return 1;
+    return 1;
 #elif defined(USE_TTAS_LOCKS)
     return ttas_trylock(global_d, local_d);
-    //if (is_free_ttas(the_locks, index)) {
-    //    ttas_lock(the_locks, local_d, index);
-    //    return 0;
-    //}
-   //return 1;
 #elif defined(USE_SPINLOCK_LOCKS)
     return spinlock_trylock(global_d, local_d);
-    //if (is_free_spinlock(the_locks, index)) {
-    //    spinlock_lock(the_locks, local_d, index);
-    //    return 0;
-   // }
-   //return 1;
 #elif defined(USE_ARRAY_LOCKS)
     return alock_trylock(*local_d);
-//    if (is_free_alock(the_locks[index])) {
-//        alock_lock(local_d[index]);
-//        return 0;
-//    }
-//   return 1;
 #elif defined(USE_RW_LOCKS)
     return rw_trylock(global_d,local_d);
-//    if (is_free_rw(&the_locks[index])) {
-//        write_acquire(&the_locks[index],&(local_d[index]));
-//        return 0;
-//    }
-//   return 1;
 #elif defined(USE_TICKET_LOCKS)
     return ticket_trylock(global_d);
-    //if (is_free_ticket(&the_locks[index])) {
-    //    ticket_acquire(&the_locks[index]);
-    //    return 0;
-   // }
-   //return 1;
 #elif defined(USE_CLH_LOCKS)
     return clh_trylock(global_d->the_lock,local_d->my_qnode);
 #elif defined(USE_MUTEX_LOCKS)
     return pthread_mutex_trylock(global_d);
 #elif defined(USE_HTICKET_LOCKS)
-        return htlock_trylock(global_d);
-//    if (is_free_hticket(&the_locks[index])) {
-//        htlock_lock(&the_locks[index]);
-//        return 0;
-//    }
-//   return 1;
+    return htlock_trylock(global_d);
 #endif
 }
 

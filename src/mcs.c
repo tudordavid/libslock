@@ -1,31 +1,31 @@
 /*
-* File: mcs.c
-* Author: Tudor David <tudor.david@epfl.ch>
-*
-* Description: 
-*      MCS lock implementation
-*
-* The MIT License (MIT)
-*
-* Copyright (c) 2013 Tudor David
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * File: mcs.c
+ * Author: Tudor David <tudor.david@epfl.ch>
+ *
+ * Description: 
+ *      MCS lock implementation
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2013 Tudor David
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 
 
@@ -33,42 +33,42 @@
 #include "mcs.h"
 
 int mcs_trylock(mcs_lock *L, mcs_qnode_ptr I) {
-  I->next=NULL;
+    I->next=NULL;
 #ifndef  __tile__
-  if (CAS_PTR(L, NULL, I)==NULL) return 0;
-  return 1;
+    if (CAS_PTR(L, NULL, I)==NULL) return 0;
+    return 1;
 #else
-  MEM_BARRIER;
-  if (CAS_PTR( L, NULL, I)==NULL) return 0;
-  return 1;
+    MEM_BARRIER;
+    if (CAS_PTR( L, NULL, I)==NULL) return 0;
+    return 1;
 #endif
 
 }
 
 void mcs_acquire(mcs_lock *L, mcs_qnode_ptr I) 
 {
-  I->next = NULL;
+    I->next = NULL;
 #ifndef  __tile__
-  mcs_qnode_ptr pred = (mcs_qnode*) SWAP_PTR((volatile void*) L, (void*) I);
+    mcs_qnode_ptr pred = (mcs_qnode*) SWAP_PTR((volatile void*) L, (void*) I);
 #else
-  MEM_BARRIER;
-  mcs_qnode_ptr pred = (mcs_qnode*) SWAP_PTR( L, I);
+    MEM_BARRIER;
+    mcs_qnode_ptr pred = (mcs_qnode*) SWAP_PTR( L, I);
 #endif
-  if (pred == NULL) 		/* lock was free */
-    return;
-  I->waiting = 1; // word on which to spin
-  MEM_BARRIER;
-  pred->next = I; // make pred point to me
+    if (pred == NULL) 		/* lock was free */
+        return;
+    I->waiting = 1; // word on which to spin
+    MEM_BARRIER;
+    pred->next = I; // make pred point to me
 
 #if defined(OPTERON_OPTIMIZE)
-  PREFETCHW(I);
+    PREFETCHW(I);
 #endif	/* OPTERON_OPTIMIZE */
-  while (I->waiting != 0) 
+    while (I->waiting != 0) 
     {
-      PAUSE;
+        PAUSE;
 #if defined(OPTERON_OPTIMIZE)
-      pause_rep(23);
-      PREFETCHW(I);
+        pause_rep(23);
+        PREFETCHW(I);
 #endif	/* OPTERON_OPTIMIZE */
     }
 
@@ -76,21 +76,21 @@ void mcs_acquire(mcs_lock *L, mcs_qnode_ptr I)
 
 void mcs_release(mcs_lock *L, mcs_qnode_ptr I) 
 {
-  mcs_qnode_ptr succ;
+    mcs_qnode_ptr succ;
 #if defined(OPTERON_OPTIMIZE)
-      PREFETCHW(I);
+    PREFETCHW(I);
 #endif	/* OPTERON_OPTIMIZE */
-  if (!(succ = I->next)) /* I seem to have no succ. */
+    if (!(succ = I->next)) /* I seem to have no succ. */
     { 
-      /* try to fix global pointer */
-      if (CAS_PTR(L, I, NULL) == I) 
-	return;
-      do {
-	succ = I->next;
-	PAUSE;
-      } while (!succ); // wait for successor
+        /* try to fix global pointer */
+        if (CAS_PTR(L, I, NULL) == I) 
+            return;
+        do {
+            succ = I->next;
+            PAUSE;
+        } while (!succ); // wait for successor
     }
-  succ->waiting = 0;
+    succ->waiting = 0;
 }
 
 int is_free_mcs(mcs_lock *L ){
@@ -99,8 +99,8 @@ int is_free_mcs(mcs_lock *L ){
 }
 
 /*
-    Methods for easy lock array manipulation
-*/
+   Methods for easy lock array manipulation
+   */
 
 mcs_global_params* init_mcs_array_global(uint32_t num_locks) {
     uint32_t i;

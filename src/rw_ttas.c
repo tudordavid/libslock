@@ -1,31 +1,31 @@
 /*
-* File: rw_ttas.c
-* Author: Tudor David <tudor.david@epfl.ch>
-*
-* Description: 
-*      Read-write test-and-test-and set implementation
-*
-* The MIT License (MIT)
-*
-* Copyright (c) 2013 Tudor David
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * File: rw_ttas.c
+ * Author: Tudor David <tudor.david@epfl.ch>
+ *
+ * Description: 
+ *      Read-write test-and-test-and set implementation
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2013 Tudor David
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 
 
@@ -34,46 +34,46 @@
 __thread unsigned long * rw_seeds;
 
 int rw_trylock(rw_ttas* lock, uint32_t* limit) {
-      if (CAS_U16(&lock->lock_data,0,W_MASK)==0) return 0;
-      return 1;
-      
+    if (CAS_U16(&lock->lock_data,0,W_MASK)==0) return 0;
+    return 1;
+
 }
 
 
 void read_acquire(rw_ttas* lock, uint32_t* limit) {
-  uint32_t delay;
-  while (1) 
+    uint32_t delay;
+    while (1) 
     {
-      rw_data_t aux;
+        rw_data_t aux;
 #if defined(OPTERON_OPTIMIZE)
-//      uint32_t t = 512;
-      PREFETCHW(lock);
+        //      uint32_t t = 512;
+        PREFETCHW(lock);
 #endif  /* OPTERON_OPTIMIZE */
-      while ((aux=lock->lock_data)>MAX_RW) 
-	{
+        while ((aux=lock->lock_data)>MAX_RW) 
+        {
 #if defined(OPTERON_OPTIMIZE)
-//	  uint32_t wt = (my_random(&(rw_seeds[0]),&(rw_seeds[1]),&(rw_seeds[2])) % t) + 1;
-//	  pause_rep(wt);
-	  PREFETCHW(lock);
-	  /* t+=16; */
-//	  t *= 4;
-//	  if (t > 102400)
-//	    {
-//	      t = 102400;
-//	    }
-	  PREFETCHW(lock);
+            //	  uint32_t wt = (my_random(&(rw_seeds[0]),&(rw_seeds[1]),&(rw_seeds[2])) % t) + 1;
+            //	  pause_rep(wt);
+            PREFETCHW(lock);
+            /* t+=16; */
+            //	  t *= 4;
+            //	  if (t > 102400)
+            //	    {
+            //	      t = 102400;
+            //	    }
+            PREFETCHW(lock);
 #endif  /* OPTERON_OPTIMIZE */
-	}
-      //uint16_t aux = (uint16_t) lock->lock_data;
-      if (CAS_U16(&lock->lock_data,aux,aux+1)==aux) {
-	    return;
-      }
+        }
+        //uint16_t aux = (uint16_t) lock->lock_data;
+        if (CAS_U16(&lock->lock_data,aux,aux+1)==aux) {
+            return;
+        }
         else 
-	    {
-	    delay = my_random(&(rw_seeds[0]),&(rw_seeds[1]),&(rw_seeds[2]))%(*limit);
-	    *limit = MAX_DELAY > 2*(*limit) ? 2*(*limit) : MAX_DELAY;
-	    cdelay(delay);
-	    }
+        {
+            delay = my_random(&(rw_seeds[0]),&(rw_seeds[1]),&(rw_seeds[2]))%(*limit);
+            *limit = MAX_DELAY > 2*(*limit) ? 2*(*limit) : MAX_DELAY;
+            cdelay(delay);
+        }
     }
 }
 
@@ -82,36 +82,36 @@ void read_release(rw_ttas* lock) {
 }
 
 void write_acquire(rw_ttas* lock, uint32_t* limit) {
-  uint32_t delay;
-  while (1) 
+    uint32_t delay;
+    while (1) 
     {
 #if defined(OPTERON_OPTIMIZE)
-//      uint32_t t = 512;
-      PREFETCHW(lock);
+        //      uint32_t t = 512;
+        PREFETCHW(lock);
 #endif  /* OPTERON_OPTIMIZE */
-      while (lock->lock_data!=0) 
-	{
+        while (lock->lock_data!=0) 
+        {
 #if defined(OPTERON_OPTIMIZE)
-//	  uint32_t wt = (my_random(&(rw_seeds[0]),&(rw_seeds[1]),&(rw_seeds[2])) % t) + 1;
-//	  pause_rep(wt);
-	  PREFETCHW(lock);
-//	  t *= 4;
-//	  if (t > 102400)
-//	    {
-//	      t = 102400;
-//	    }
-//	  PREFETCHW(lock);
+            //	  uint32_t wt = (my_random(&(rw_seeds[0]),&(rw_seeds[1]),&(rw_seeds[2])) % t) + 1;
+            //	  pause_rep(wt);
+            PREFETCHW(lock);
+            //	  t *= 4;
+            //	  if (t > 102400)
+            //	    {
+            //	      t = 102400;
+            //	    }
+            //	  PREFETCHW(lock);
 #endif  /* OPTERON_OPTIMIZE */
-	}
-      if (CAS_U16(&lock->lock_data,0,W_MASK)==0) {
-    	return;
-      } 
-      else {
-	delay = my_random(&(rw_seeds[0]),&(rw_seeds[1]),&(rw_seeds[2]))%(*limit);
-	*limit = MAX_DELAY > 2*(*limit) ? 2*(*limit) : MAX_DELAY;
-	cdelay(delay);
-      }
-        
+        }
+        if (CAS_U16(&lock->lock_data,0,W_MASK)==0) {
+            return;
+        } 
+        else {
+            delay = my_random(&(rw_seeds[0]),&(rw_seeds[1]),&(rw_seeds[2]))%(*limit);
+            *limit = MAX_DELAY > 2*(*limit) ? 2*(*limit) : MAX_DELAY;
+            cdelay(delay);
+        }
+
     }
 }
 
@@ -144,7 +144,7 @@ uint32_t* init_rw_ttas_array_local(uint32_t thread_num, uint32_t size){
     limits = (uint32_t*)malloc(size * sizeof(uint32_t));
     uint32_t i;
     for (i = 0; i < size; i++) {
-       limits[i]=1; 
+        limits[i]=1; 
     }
     return limits;
 }

@@ -1,61 +1,61 @@
 /*
-* File: clh.c
-* Author: Tudor David <tudor.david@epfl.ch>
-*
-* Description: 
-*      Clh lock implementation
-*
-* The MIT License (MIT)
-*
-* Copyright (c) 2013 Tudor David
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * File: clh.c
+ * Author: Tudor David <tudor.david@epfl.ch>
+ *
+ * Description: 
+ *      Clh lock implementation
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2013 Tudor David
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 
 
 #include "clh.h"
 
 int clh_trylock(clh_lock * L, clh_qnode_ptr I) {
-  return 1;
+    return 1;
 }
 
 
 volatile clh_qnode* clh_acquire(clh_lock *L, clh_qnode* I ) 
 {
-  I->locked=1;
+    I->locked=1;
 #ifndef  __tile__
-  clh_qnode_ptr pred = (clh_qnode*) SWAP_PTR((volatile void*) (L), (void*) I);
+    clh_qnode_ptr pred = (clh_qnode*) SWAP_PTR((volatile void*) (L), (void*) I);
 #else
-  MEM_BARRIER;
-  clh_qnode_ptr pred = (clh_qnode*) SWAP_PTR( L, I);
+    MEM_BARRIER;
+    clh_qnode_ptr pred = (clh_qnode*) SWAP_PTR( L, I);
 #endif
-  if (pred == NULL) 		/* lock was free */
-    return NULL;
+    if (pred == NULL) 		/* lock was free */
+        return NULL;
 #if defined(OPTERON_OPTIMIZE)
-  PREFETCHW(pred);
+    PREFETCHW(pred);
 #endif	/* OPTERON_OPTIMIZE */
-  while (pred->locked != 0) 
+    while (pred->locked != 0) 
     {
-      PAUSE;
+        PAUSE;
 #if defined(OPTERON_OPTIMIZE)
-      pause_rep(23);
-      PREFETCHW(pred);
+        pause_rep(23);
+        PREFETCHW(pred);
 #endif	/* OPTERON_OPTIMIZE */
     }
 
@@ -113,8 +113,8 @@ clh_global_params init_clh_global() {
     uint32_t i;
     the_params.the_lock=(clh_lock*)malloc(sizeof(clh_lock));
     clh_qnode * a_node = (clh_qnode *) malloc(sizeof(clh_qnode));
-     a_node->locked=0;
-     *(the_params.the_lock) = a_node;
+    a_node->locked=0;
+    *(the_params.the_lock) = a_node;
     return the_params;
 }
 
@@ -132,7 +132,7 @@ clh_local_params init_clh_local(uint32_t thread_num) {
 }
 
 void end_clh_local(clh_local_params the_params){
-   //empty method
+    //empty method
 }
 
 void end_clh_global(clh_global_params the_lock) {

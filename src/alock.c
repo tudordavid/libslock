@@ -1,31 +1,31 @@
 /*
-* File: alock.c
-* Author: Tudor David <tudor.david@epfl.ch>
-*
-* Description: 
-*      Array lock implementation
-*
-* The MIT License (MIT)
-*
-* Copyright (c) 2013 Tudor David
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * File: alock.c
+ * Author: Tudor David <tudor.david@epfl.ch>
+ *
+ * Description: 
+ *      Array lock implementation
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2013 Tudor David
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 
 
@@ -52,50 +52,47 @@ int alock_trylock(array_lock_t* local_lock) {
 void alock_lock(array_lock_t* local_lock) 
 {
 #if defined(OPTERON_OPTIMIZE)
-  PREFETCHW(local_lock);
-  PREFETCHW(local_lock->shared_data);
+    PREFETCHW(local_lock);
+    PREFETCHW(local_lock->shared_data);
 #endif	/* OPTERON_OPTIMIZE */
-  lock_shared_t *lock = local_lock->shared_data;
+    lock_shared_t *lock = local_lock->shared_data;
 #ifdef __tile__
-  //__sync_synchronize();
-  MEM_BARRIER;
+    MEM_BARRIER;
 #endif
-  uint32_t slot = FAI_U32(&(lock->tail)) % lock->size;
-  local_lock->my_index = slot;
+    uint32_t slot = FAI_U32(&(lock->tail)) % lock->size;
+    local_lock->my_index = slot;
 
-  volatile uint16_t* flag = &lock->flags[slot].flag;
+    volatile uint16_t* flag = &lock->flags[slot].flag;
 #ifdef __tile__
-  //__sync_synchronize();
     MEM_BARRIER;
 #endif
 #if defined(OPTERON_OPTIMIZE)
-  PREFETCHW(flag);
+    PREFETCHW(flag);
 #endif	/* OPTERON_OPTIMIZE */
-  while (*flag == 0) 
+    while (*flag == 0) 
     {
-      PAUSE;
+        PAUSE;
 #if defined(OPTERON_OPTIMIZE)
-      pause_rep(23);
-      PREFETCHW(flag);
+        pause_rep(23);
+        PREFETCHW(flag);
 #endif	/* OPTERON_OPTIMIZE */
-
     }
 }
 
 void alock_unlock(array_lock_t* local_lock) 
 {
 #if defined(OPTERON_OPTIMIZE)
-  PREFETCHW(local_lock);
-  PREFETCHW(local_lock->shared_data);
+    PREFETCHW(local_lock);
+    PREFETCHW(local_lock->shared_data);
 #endif	/* OPTERON_OPTIMIZE */
-  lock_shared_t *lock = local_lock->shared_data;
-  uint32_t slot = local_lock->my_index;
-  lock->flags[slot].flag = 0;
+    lock_shared_t *lock = local_lock->shared_data;
+    uint32_t slot = local_lock->my_index;
+    lock->flags[slot].flag = 0;
 #ifdef __tile__
-__sync_synchronize();
+    MEM_BARRIER;
 #endif
-  COMPILER_BARRIER;
-  lock->flags[(slot + 1)%lock->size].flag = 1;
+    COMPILER_BARRIER;
+    lock->flags[(slot + 1)%lock->size].flag = 1;
 }
 
 /*

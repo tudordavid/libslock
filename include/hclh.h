@@ -1,31 +1,31 @@
 /*
-* File: hclh.h
-* Author: Tudor David <tudor.david@epfl.ch>
-*
-* Description: 
-*      Implementation of a hierarchical CLH lock
-*
-* The MIT License (MIT)
-*
-* Copyright (c) 2013 Tudor David
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * File: hclh.h
+ * Author: Tudor David <tudor.david@epfl.ch>
+ *
+ * Description: 
+ *      Implementation of a hierarchical CLH lock
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2013 Tudor David
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 #ifndef _HCLH_H_
 #define _HCLH_H_
@@ -45,9 +45,9 @@
 #include "atomic_ops.h"
 
 typedef struct node_fields {
-     volatile uint8_t successor_must_wait;
-     volatile uint8_t tail_when_spliced;
-     volatile uint8_t cluster_id;
+    volatile uint8_t successor_must_wait;
+    volatile uint8_t tail_when_spliced;
+    volatile uint8_t cluster_id;
 } node_fields;
 
 typedef struct qnode {
@@ -102,7 +102,9 @@ void end_hclh_array_local(hclh_local_params** local_params, uint32_t size);
 
 void end_hclh_array_global(hclh_global_params** global_params, uint32_t size);
 
-//single lock manipluation
+/*
+ *single lock initialization and desctruction
+ */
 hclh_global_params* init_hclh_global();
 
 
@@ -114,11 +116,12 @@ void end_hclh_local(hclh_local_params* local_params);
 
 void end_hclh_global(hclh_global_params* global_params);
 
+/*
+ *  Lock manipulation methods
+ */
 
-//lock
 volatile qnode * hclh_acquire(local_queue *lq, global_queue *gq, qnode *my_qnode);
 
-//unlock
 qnode * hclh_release(qnode *my_qnode, qnode * my_pred, uint8_t th_cluster);
 
 
