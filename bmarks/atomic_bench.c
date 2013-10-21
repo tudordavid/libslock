@@ -12,13 +12,9 @@
 #endif
 #include "utils.h"
 #include "atomic_ops.h"
-#ifdef __tile__
-#include <tmc/alloc.h>
-#endif
 
 #define XSTR(s) #s
 #define ALIGNMENT
-//#define TEST_CAS
 
 #if defined (__tile__) || defined (__sparc__)
 typedef volatile uint32_t data_type;
@@ -30,14 +26,14 @@ typedef volatile uint8_t data_type;
 #define DEFAULT_NUM_THREADS 1
 #define DEFAULT_DURATION 10000
 #define DEFAULT_PAUSE 100 //pause between consecutive attemps to do an atomic operation
-#define DEFAULT_SEED 0
-
+#define DEFAULT_BENCHMARK 0
 
 __thread uint32_t phys_id;
+ticks correction;
 int num_entries;
 int num_threads;
 int duration;
-int seed;
+int benchmark;
 int op_pause;
 
 static volatile int stop;
@@ -86,12 +82,13 @@ void barrier_cross(barrier_t *b)
 typedef struct thread_data {
     barrier_t *barrier;
     unsigned long num_operations;
-    unsigned int seed;
+    ticks total_time;
+    unsigned long num_measured;
     int id;
     char padding[CACHE_LINE_SIZE];
 } thread_data_t;
 
-void *test(void *data)
+void *test_latency(void *data)
 {
     thread_data_t *d = (thread_data_t *)data;
     phys_id = the_cores[d->id];
@@ -99,84 +96,253 @@ void *test(void *data)
     int rand_max;
     data_type old_data;
     data_type new_data;
- volatile   uint64_t res;
-//#ifdef __sparc__
-//#else
-//    phys_id = d->id;
-//#endif
+    uint64_t res;
 
     seeds = seed_rand();
     rand_max = num_entries - 1;
 
-    /* Init of local data if necessary */
-
-    /* Wait on barrier */
+    unsigned long do_not_measure=0;
+    int entry=0;
+    ticks t1,t2;
     barrier_cross(d->barrier);
-    int entry;
-	entry=0;    
+
     while (stop == 0) {
-    //   entry = (int)(erand48(seed) * rand_max) + rand_min;
+        if (num_entries>1) {
+            entry =(int) my_random(&(seeds[0]),&(seeds[1]),&(seeds[2])) & rand_max;
+        }
+        do_not_measure=(d->num_operations) & 0x1f; 
 #ifdef TEST_CAS
-//    do {
-if ((d->num_operations)&1) {
-    res = CAS_U8(&(the_data[entry].data),1,0);
-} else {
-    res = CAS_U8(&(the_data[entry].data),0,1);
-}
-//   MEM_BARRIER;
-//    } while(res!=0);
-#elif defined(TEST_SWAP)
-//    do {
-#ifdef __sparc__
-if ((d->num_operations)&1) {
-    res = SWAP_U32(&(the_data[entry].data),0);
-} else {
-    res = SWAP_U32(&(the_data[entry].data),1);
-}
-
-#else
-if ((d->num_operations)&1) {
-    res = SWAP_U8(&(the_data[entry].data),0);
-} else {
-    res = SWAP_U8(&(the_data[entry].data),1);
-}
+        if ((d->num_operations)&1) { 
+            res = CAS_U8(&(the_data[entry].data),1,0);
+        } else {
+            if (!do_not_measure) {
+                t1=getticks();
+#ifdef __tile__
+                MEM_BARRIER;
 #endif
-    //MEM_BARRIER;
-//    } while(res!=0);
-#elif defined(TEST_CTR)
-    do {
-    old_data=the_data[entry].data;
-    new_data=old_data+1;
-    } while (CAS_U8(&(the_data[entry].data),old_data,new_data)!=old_data);
-    //MEM_BARRIER;
-#elif defined(TEST_TAS)
-//    do {
-     res = TAS_U8(&(the_data[entry].data));
-    //MEM_BARRIER;
-    //if (res==0) {
-    //MEM_BARRIER;
-       // the_data[entry].data = 0;
-    //}
+                res = CAS_U8(&(the_data[entry].data),0,1);
+#ifdef __tile__
+                MEM_BARRIER;
+#endif
+                t2=getticks();
 
-//    } while (res!=0);
+            } else {
+                res = CAS_U8(&(the_data[entry].data),0,1);
+            }
+        }
+#elif defined(TEST_SWAP)
+        if ((d->num_operations)&1) {
+            res = SWAP_U8(&(the_data[entry].data),0);
+        } else {
+            if (do_not_measure) {
+                res = SWAP_U8(&(the_data[entry].data),1);
+            } else {
+                t1=getticks(); 
+#ifdef __tile__
+                MEM_BARRIER;
+#endif
+               res = SWAP_U8(&(the_data[entry].data),1);
+#ifdef __tile__
+                MEM_BARRIER;
+#endif
+
+                t2=getticks();
+            }
+        }
+#elif defined(TEST_CTR)
+        if (do_not_measure) {
+            do {
+                old_data=the_data[entry].data;
+                new_data=old_data+1;
+            } while (CAS_U8(&(the_data[entry].data),old_data,new_data)!=old_data);
+        } else {
+            t1=getticks();
+#ifdef __tile__
+                MEM_BARRIER;
+#endif
+            do {
+                old_data=the_data[entry].data;
+                new_data=old_data+1;
+            } while (CAS_U8(&(the_data[entry].data),old_data,new_data)!=old_data);
+#ifdef __tile__
+                MEM_BARRIER;
+#endif
+            t2=getticks();
+        }
+#elif defined(TEST_TAS)
+        if (do_not_measure) {
+            res = TAS_U8(&(the_data[entry].data));
+        } else {
+            t1=getticks();
+#ifdef __tile__
+                MEM_BARRIER;
+#endif
+            res = TAS_U8(&(the_data[entry].data));
+#ifdef __tile__
+                MEM_BARRIER;
+#endif
+            t2=getticks();
+        }
+        if (res==0) {
+            the_data[entry].data = 0;
+        }
 #elif defined(TEST_FAI)
-    FAI_U8(&(the_data[entry].data));
-  //  MEM_BARRIER;
+        if (do_not_measure) {
+            FAI_U8(&(the_data[entry].data));
+        } else {
+            t1=getticks();
+#ifdef __tile__
+                MEM_BARRIER;
+#endif
+            FAI_U8(&(the_data[entry].data));
+#ifdef __tile__
+                MEM_BARRIER;
+#endif
+            t2=getticks();
+        }
 #else
-perror("No test primitive specified");
+        perror("No test primitive specified");
 #endif 
-//#ifdef XEON
-//MEM_BARRIER;
-//#endif
+        if (!do_not_measure) {
+            d->num_measured++;
+            d->total_time+=t2-t1-correction;
+        }
         d->num_operations++;
         if (op_pause>0) {
             cpause(op_pause);
-            //cdelay(op_pause);
         }
     }
+    return NULL;
+}
 
-    /* Free any local data if necessary */ 
+void *test_success(void *data)
+{
+    thread_data_t *d = (thread_data_t *)data;
+    phys_id = the_cores[d->id];
+    set_cpu(phys_id);
+    int rand_max;
+    data_type old_data;
+    data_type new_data;
+    uint64_t res;
 
+    seeds = seed_rand();
+    rand_max = num_entries - 1;
+
+    barrier_cross(d->barrier);
+    int entry=0;
+    while (stop == 0) {
+        if (num_entries>1) {
+            entry =(int) my_random(&(seeds[0]),&(seeds[1]),&(seeds[2])) & rand_max;
+        }
+#ifdef TEST_CAS
+        if ((d->num_operations)&1) {
+            do {
+                res = CAS_U8(&(the_data[entry].data),0,1);
+            } while (res!=1);
+        } else {
+            do {
+                res = CAS_U8(&(the_data[entry].data),1,0);
+            } while (res!=0);
+        }
+#elif defined(TEST_SWAP)
+#ifdef __sparc__
+        if ((d->num_operations)&1) {
+            res = SWAP_U32(&(the_data[entry].data),0);
+        } else {
+            res = SWAP_U32(&(the_data[entry].data),1);
+        }
+#else
+        if ((d->num_operations)&1) {
+            res = SWAP_U8(&(the_data[entry].data),0);
+        } else {
+            res = SWAP_U8(&(the_data[entry].data),1);
+        }
+#endif
+#elif defined(TEST_CTR)
+        do {
+            old_data=the_data[entry].data;
+            new_data=old_data+1;
+        } while (CAS_U8(&(the_data[entry].data),old_data,new_data)!=old_data);
+#elif defined(TEST_TAS)
+        do {
+            res = TAS_U8(&(the_data[entry].data));
+        } while (res!=0);
+        MEM_BARRIER;
+        the_data[entry].data = 0;
+#elif defined(TEST_FAI)
+        FAI_U8(&(the_data[entry].data));
+#else
+        perror("No test primitive specified");
+#endif 
+        d->num_operations++;
+        if (op_pause>0) {
+            cpause(op_pause);
+        }
+    }
+    return NULL;
+}
+
+
+void *test_throughput(void *data)
+{
+    thread_data_t *d = (thread_data_t *)data;
+    phys_id = the_cores[d->id];
+    set_cpu(phys_id);
+    int rand_max;
+    data_type old_data;
+    data_type new_data;
+    uint64_t res;
+
+    seeds = seed_rand();
+    rand_max = num_entries - 1;
+
+    barrier_cross(d->barrier);
+    int entry=0;
+    while (stop == 0) {
+        if (num_entries>1) {
+            entry =(int) my_random(&(seeds[0]),&(seeds[1]),&(seeds[2])) & rand_max;
+        }
+#ifdef TEST_CAS
+        if ((d->num_operations)&1) {
+            res = CAS_U8(&(the_data[entry].data),1,0);
+        } else {
+            res = CAS_U8(&(the_data[entry].data),0,1);
+        }
+#elif defined(TEST_SWAP)
+#ifdef __sparc__
+        if ((d->num_operations)&1) {
+            res = SWAP_U32(&(the_data[entry].data),0);
+        } else {
+            res = SWAP_U32(&(the_data[entry].data),1);
+        }
+
+#else
+        if ((d->num_operations)&1) {
+            res = SWAP_U8(&(the_data[entry].data),0);
+        } else {
+            res = SWAP_U8(&(the_data[entry].data),1);
+        }
+#endif
+#elif defined(TEST_CTR)
+        do {
+            old_data=the_data[entry].data;
+            new_data=old_data+1;
+        } while (CAS_U8(&(the_data[entry].data),old_data,new_data)!=old_data);
+#elif defined(TEST_TAS)
+        res = TAS_U8(&(the_data[entry].data));
+        if (res==0) {
+            the_data[entry].data = 0;
+        }
+#elif defined(TEST_FAI)
+        FAI_U8(&(the_data[entry].data));
+#else
+        perror("No test primitive specified");
+#endif 
+        d->num_operations++;
+        if (op_pause>0) {
+            cpause(op_pause);
+        }
+    }
     return NULL;
 }
 
@@ -193,7 +359,7 @@ void catcher(int sig)
 
 int main(int argc, char* const argv[])
 {
-set_cpu(the_cores[0]);
+    set_cpu(the_cores[0]);
 #ifdef PRINT_OUTPUT
     fprintf(stderr, "The size of the data being tested: %lu\n",sizeof(data_type));
     fprintf(stderr, "Number of entries per cache line: %lu\n",CACHE_LINE_SIZE / sizeof(data_t));
@@ -205,10 +371,11 @@ set_cpu(the_cores[0]);
         {"duration",                  required_argument, NULL, 'd'},
         {"pause",                     required_argument, NULL, 'p'},
         {"num-threads",               required_argument, NULL, 'n'},
-        {"seed",                      required_argument, NULL, 's'},
+        {"benchmark",                      required_argument, NULL, 'b'},
         {NULL, 0, NULL, 0}
     };
 
+    correction = getticks_correction_calc(); 
     int i, c;
     thread_data_t *data;
     pthread_t *threads;
@@ -216,19 +383,18 @@ set_cpu(the_cores[0]);
     barrier_t barrier;
     struct timeval start, end;
     struct timespec timeout;
- 
+
     num_entries = DEFAULT_NUM_ENTRIES;
     num_threads = DEFAULT_NUM_THREADS;
     duration = DEFAULT_DURATION;
-    seed = DEFAULT_SEED;
+    benchmark = DEFAULT_BENCHMARK;
     op_pause = DEFAULT_PAUSE;
-
 
     sigset_t block_set;
 
     while(1) {
         i = 0;
-        c = getopt_long(argc, argv, "he:d:p:n:s", long_options, &i);
+        c = getopt_long(argc, argv, "he:d:p:n:b:", long_options, &i);
 
         if(c == -1)
             break;
@@ -244,7 +410,7 @@ set_cpu(the_cores[0]);
                 printf("lock stress test\n"
                         "\n"
                         "Usage:\n"
-                        "  stress_test [options...]\n"
+                        "  atomic_bench [options...]\n"
                         "\n"
                         "Options:\n"
                         "  -h, --help\n"
@@ -257,9 +423,9 @@ set_cpu(the_cores[0]);
                         "        Pause between consecutive atomic operations in cycles (default=" XSTR(DEFAULT_DURATION) ")\n"
                         "  -n, --num-threads <int>\n"
                         "        Number of threads (default=" XSTR(DEFAULT_NUM_THREADS) ")\n"
-                        "  -s, --seed <int>\n"
-                        "        RNG seed (0=time-based, default=" XSTR(DEFAULT_SEED) ")\n"
-                        );
+                        "  -b, --benchmark <int>\n"
+                        "        benchmark to perform (0=throughput in atomic operation call, 1=throughput in successful atomic ops, 2=atomic op latency,  default=" XSTR(DEFAULT_BENCHMARK) ")\n"
+                      );
                 exit(0);
             case 'e':
                 num_entries = atoi(optarg);
@@ -273,8 +439,8 @@ set_cpu(the_cores[0]);
             case 'p':
                 op_pause = atoi(optarg);
                 break;
-            case 's':
-                seed = atoi(optarg);
+            case 'b':
+                benchmark = atoi(optarg);
                 break;
             case '?':
                 printf("Use -h or --help for help\n");
@@ -302,14 +468,8 @@ set_cpu(the_cores[0]);
     timeout.tv_sec = duration / 1000;
     timeout.tv_nsec = (duration % 1000) * 1000000;
 
- #ifdef __tile__
-    tmc_alloc_t alloc = TMC_ALLOC_INIT;
-    tmc_alloc_set_home(&alloc, TMC_ALLOC_HOME_HERE);
-    the_data = (data_t*) tmc_alloc_map(&alloc, num_entries*sizeof(data_t));
-#else
-    the_data = (data_t*)malloc(num_entries * sizeof(data_t));
-#endif
 
+    the_data = (data_t*)malloc(num_entries * sizeof(data_t));
     for (i = 0; i < num_entries; i++) {
         the_data[i].data=0;
     }
@@ -324,25 +484,42 @@ set_cpu(the_cores[0]);
         exit(1);
     }
 
-    if (seed == 0)
-        srand((int)time(NULL));
-    else
-        srand(seed);
-
     stop = 0;
     /* Access set from all threads */
     barrier_init(&barrier, num_threads + 1);
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     for (i = 0; i < num_threads; i++) {
+        data[i].id = i;
+        data[i].num_operations = 0;
+        data[i].total_time=0;
+        data[i].num_measured=0;
+        data[i].barrier = &barrier;
+    }
+
+
+    void *(*test_function)(void*);
+
+    switch(benchmark) {
+        case 0:
+            test_function = test_throughput;
+            break;
+        case 1:
+            test_function = test_success;
+            break;
+        case 2: 
+            test_function = test_latency;
+            break;
+        default:
+            fprintf(stderr, "benchmark not correctly specified\n");
+            exit(1);
+    }
+
+    for (i=0;i<num_threads; i++) {
 #ifdef PRINT_OUTPUT
         printf("Creating thread %d\n", i);
 #endif
-        data[i].id = i;
-        data[i].num_operations = 0;
-        data[i].seed = rand();
-        data[i].barrier = &barrier;
-        if (pthread_create(&threads[i], &attr, test, (void *)(&data[i])) != 0) {
+        if (pthread_create(&threads[i], &attr, test_function, (void *)(&data[i])) != 0) {
             fprintf(stderr, "Error creating thread\n");
             exit(1);
         }
@@ -385,26 +562,31 @@ set_cpu(the_cores[0]);
     }
 
     duration = (end.tv_sec * 1000 + end.tv_usec / 1000) - (start.tv_sec * 1000 + start.tv_usec / 1000);
-    
+
     unsigned long operations = 0;
+    unsigned long total_measurements = 0;
+    ticks total_ticks = 0;
+
     for (i = 0; i < num_threads; i++) {
 #ifdef PRINT_OUTPUT
         printf("Thread %d\n", i);
         printf("  #operations   : %lu\n", data[i].num_operations);
 #endif
         operations += data[i].num_operations;
+        if (benchmark==2) {
+            total_ticks += data[i].total_time;
+            total_measurements += data[i].num_measured;
+        }
     }
 
-#ifdef PRINT_OUTPUT
     printf("Duration      : %d (ms)\n", duration);
-#endif
     printf("#operations     : %lu (%f / s)\n", operations, operations * 1000.0 / duration);
-
-
-//    free((data_t*) the_data);
+    if (benchmark==2) {
+        printf("average latency     : %lu\n", total_ticks / total_measurements);
+    }
+    free((data_t*) the_data);
     free(threads);
     free(data);
 
- 
     return 0;
 }

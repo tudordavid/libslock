@@ -12,7 +12,9 @@
 #endif
 #include "utils.h"
 #include "atomic_ops.h"
-
+#ifdef __tile__
+#include <tmc/alloc.h>
+#endif
 #define XSTR(s) #s
 #define ALIGNMENT
 //#define TEST_CAS
@@ -100,7 +102,7 @@ void *test(void *data)
     int rand_max;
     data_type old_data;
     data_type new_data;
-    uint64_t res;
+	volatile    uint64_t res;
     //#ifdef __sparc__
     //#else
     //    phys_id = d->id;
@@ -112,7 +114,7 @@ void *test(void *data)
     /* Init of local data if necessary */
     unsigned long do_not_measure=0;
     int entry;
-    ticks t1,t2;
+ volatile   ticks t1,t2;
     /* Wait on barrier */
     barrier_cross(d->barrier);
 
@@ -130,10 +132,14 @@ void *test(void *data)
             res = CAS_U8(&(the_data[entry].data),1,0);
         } else {
             if (!do_not_measure) {
+//		asm volatile("");
                 t1=getticks();
+//		asm volatile("");
+//		arch_atomic_read_barrier();
                 res = CAS_U8(&(the_data[entry].data),0,1);
-                t2=getticks();
-
+//		__sync_synchronize();
+//		asm volatile("");
+		t2=getticks();
             } else {
                 res = CAS_U8(&(the_data[entry].data),0,1);
             }
@@ -188,11 +194,13 @@ void *test(void *data)
         //    } while (res!=0);
 #elif defined(TEST_FAI)
         if (do_not_measure) {
-            FAI_U8(&(the_data[entry].data));
+            res = FAI_U8(&(the_data[entry].data));
           } else {
             t1=getticks();
-            FAI_U8(&(the_data[entry].data));
+
+            res = FAI_U8(&(the_data[entry].data));
             t2=getticks();
+
         }
 //        MEM_BARRIER;
 #else
@@ -203,8 +211,14 @@ void *test(void *data)
         //__sync_synchronize();
         //#endif
         if (!do_not_measure) {
-            d->num_measured++;
-            d->total_time+=t2-t1-correction;
+                  d->total_time+=t2-t1-correction;
+		d->num_measured++;
+
+       //         d->total_time+=t2-t1-correction;
+//		d->num_measured++;
+
+          // d->num_measured++;
+//            d->total_time+=t2-t1-correction;
         }
         d->num_operations++;
         if (op_pause>0) {
@@ -262,7 +276,6 @@ int main(int argc, char* const argv[])
     op_pause = DEFAULT_PAUSE;
 
     correction = getticks_correction_calc();
-
     sigset_t block_set;
 
     while(1) {
@@ -324,7 +337,6 @@ int main(int argc, char* const argv[])
     }
     op_pause=op_pause/NOP_DURATION;
     num_entries = pow2roundup(num_entries);
-
     assert(duration >= 0);
     assert(num_entries >= 1);
     assert(num_threads > 0);
@@ -341,8 +353,13 @@ int main(int argc, char* const argv[])
     timeout.tv_sec = duration / 1000;
     timeout.tv_nsec = (duration % 1000) * 1000000;
 
-
+#ifdef __tile__
+    tmc_alloc_t alloc = TMC_ALLOC_INIT;
+    tmc_alloc_set_home(&alloc, TMC_ALLOC_HOME_HERE);
+    the_data = (data_t*) tmc_alloc_map(&alloc, num_entries*sizeof(data_t));
+#else
     the_data = (data_t*)malloc(num_entries * sizeof(data_t));
+#endif
     for (i = 0; i < num_entries; i++) {
         the_data[i].data=0;
     }
@@ -441,7 +458,7 @@ int main(int argc, char* const argv[])
     printf("%lu\n", total_ticks / total_measurements);
 
 
-    free((data_t*) the_data);
+    //free((data_t*) the_data);
     free(threads);
     free(data);
 

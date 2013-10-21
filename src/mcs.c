@@ -76,6 +76,10 @@ void mcs_acquire(mcs_lock *L, mcs_qnode_ptr I)
 
 void mcs_release(mcs_lock *L, mcs_qnode_ptr I) 
 {
+#ifdef __tile__
+    MEM_BARRIER;
+#endif
+
     mcs_qnode_ptr succ;
 #if defined(OPTERON_OPTIMIZE)
     PREFETCHW(I);

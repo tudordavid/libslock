@@ -176,6 +176,9 @@ ticket_acquire(ticketlock_t* lock)
     void
 ticket_release(ticketlock_t* lock) 
 {
+#ifdef __tile__
+    MEM_BARRIER;
+#endif
 #if defined(OPTERON_OPTIMIZE)
     PREFETCHW(lock);
 #endif	/* OPTERON */

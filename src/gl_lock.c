@@ -73,6 +73,9 @@ void global_acquire_write(global_lock* gl) {
 
 void global_unlock_write(global_lock* gl) {
     COMPILER_BARRIER;
+#ifdef __tile__
+    MEM_BARRIER;
+#endif
     gl->lock_data = 0;
 }
 

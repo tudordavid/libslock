@@ -85,6 +85,9 @@ int is_free_ttas(ttas_lock_t * the_lock){
 
 void ttas_unlock(ttas_lock_t *the_lock) 
 {
+#ifdef __tile__
+    MEM_BARRIER;
+#endif
     COMPILER_BARRIER;
     the_lock->lock=0;
 }
