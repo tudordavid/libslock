@@ -109,6 +109,7 @@ mcs_global_params* init_mcs_array_global(uint32_t num_locks) {
         the_locks[i].the_lock=(mcs_lock*)malloc(sizeof(mcs_lock));
         *(the_locks[i].the_lock)=0;
     }
+    MEM_BARRIER;
     return the_locks;
 }
 
@@ -122,6 +123,7 @@ mcs_qnode** init_mcs_array_local(uint32_t thread_num, uint32_t num_locks) {
     for (i=0;i<num_locks;i++) {
         the_qnodes[i]=(mcs_qnode*)malloc(sizeof(mcs_qnode));
     }
+    MEM_BARRIER;
     return the_qnodes;
 
 }
@@ -147,6 +149,7 @@ mcs_global_params init_mcs_global() {
     mcs_global_params the_lock;
     the_lock.the_lock=(mcs_lock*)malloc(sizeof(mcs_lock));
     *(the_lock.the_lock)=0;
+    MEM_BARRIER;
     return the_lock;
 }
 
@@ -155,6 +158,8 @@ mcs_qnode* init_mcs_local(uint32_t thread_num) {
     set_cpu(thread_num);
 
     mcs_qnode*  the_qnodes=(mcs_qnode*)malloc(sizeof(mcs_qnode));
+
+    MEM_BARRIER;
     return the_qnodes;
 
 }

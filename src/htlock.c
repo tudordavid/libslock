@@ -120,6 +120,7 @@ init_thread_htlocks(uint32_t phys_core)
     htlock_node_mine = get_cluster(phys_core);
 #endif
     /* printf("core %02d / node %3d\n", phys_core, htlock_node_mine); */
+    MEM_BARRIER;
 }
 
     uint32_t
@@ -201,6 +202,7 @@ init_htlocks(uint32_t num_locks)
         create_htlock_no_alloc(htls + i, locals, i);
     }
 
+    MEM_BARRIER;
     return htls;
 }
 

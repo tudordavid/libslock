@@ -134,6 +134,7 @@ rw_ttas* init_rw_ttas_array_global(uint32_t num_locks) {
     for (i = 0; i < num_locks; i++) {
         the_locks[i].lock_data = 0;
     }
+    MEM_BARRIER;
     return the_locks;
 }
 
@@ -146,6 +147,7 @@ uint32_t* init_rw_ttas_array_local(uint32_t thread_num, uint32_t size){
     for (i = 0; i < size; i++) {
         limits[i]=1; 
     }
+    MEM_BARRIER;
     return limits;
 }
 
@@ -160,12 +162,14 @@ void end_rw_ttas_array_global(rw_ttas* the_locks) {
 rw_ttas init_rw_ttas_global() {
     rw_ttas the_lock;
     the_lock.lock_data=0;
+    MEM_BARRIER;
     return the_lock;
 }
 
 uint32_t init_rw_ttas_local(uint32_t thread_num){
     set_cpu(thread_num);
     rw_seeds = seed_rand();
+    MEM_BARRIER;
     return 1;
 }
 

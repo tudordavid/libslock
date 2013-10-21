@@ -78,6 +78,7 @@ clh_global_params* init_clh_array_global(uint32_t num_locks) {
         a_node->locked=0;
         *(the_params[i].the_lock) = a_node;
     }
+    MEM_BARRIER;
     return the_params;
 }
 
@@ -92,6 +93,7 @@ clh_local_params* init_clh_array_local(uint32_t thread_num, uint32_t num_locks) 
         local_params[i].my_qnode->locked=0;
         local_params[i].my_pred = NULL;
     }
+    MEM_BARRIER;
     return local_params;
 
 }
@@ -115,6 +117,7 @@ clh_global_params init_clh_global() {
     clh_qnode * a_node = (clh_qnode *) malloc(sizeof(clh_qnode));
     a_node->locked=0;
     *(the_params.the_lock) = a_node;
+    MEM_BARRIER;
     return the_params;
 }
 
@@ -127,6 +130,7 @@ clh_local_params init_clh_local(uint32_t thread_num) {
     local_params.my_qnode = (clh_qnode*) malloc(sizeof(clh_qnode));
     local_params.my_qnode->locked=0;
     local_params.my_pred = NULL;
+    MEM_BARRIER;
     return local_params;
 
 }

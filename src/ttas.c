@@ -104,6 +104,7 @@ ttas_lock_t* init_ttas_array_global(uint32_t num_locks) {
     for (i = 0; i < num_locks; i++) {
         the_locks[i].lock=0;
     }
+    MEM_BARRIER;
     return the_locks;
 }
 
@@ -118,6 +119,7 @@ uint32_t* init_ttas_array_local(uint32_t thread_num, uint32_t size){
     for (i = 0; i < size; i++) {
         limits[i]=1; 
     }
+    MEM_BARRIER;
     return limits;
 }
 
@@ -133,6 +135,7 @@ ttas_lock_t init_ttas_global() {
 
     ttas_lock_t the_lock;
     the_lock.lock=0;
+    MEM_BARRIER;
     return the_lock;
 }
 
@@ -140,6 +143,7 @@ uint32_t init_ttas_local(uint32_t thread_num){
     //assign the thread to the correct core
     set_cpu(thread_num);
     ttas_seeds = seed_rand();
+    MEM_BARRIER;
     return 1;
 }
 

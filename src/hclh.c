@@ -150,6 +150,7 @@ hclh_global_params** init_hclh_array_global(uint32_t num_locks) {
         a_node->fields.cluster_id = NUMBER_OF_SOCKETS+1;
         *(the_params[i]->shared_queue) = a_node;
     }
+    MEM_BARRIER;
     return the_params;
 }
 
@@ -191,6 +192,7 @@ hclh_local_params** init_hclh_array_local(uint32_t phys_core, uint32_t num_locks
         while(the_params[i]->init_done[phys_core/CORES_PER_SOCKET]!=INIT_VAL) {}
         local_params[i]->my_queue = the_params[i]->local_queues[phys_core/CORES_PER_SOCKET];
     }
+    MEM_BARRIER;
     return local_params;
 }
 
@@ -220,6 +222,7 @@ hclh_global_params* init_hclh_global() {
     a_node->data=0;
     a_node->fields.cluster_id = NUMBER_OF_SOCKETS+1;
     *(the_params->shared_queue) = a_node;
+    MEM_BARRIER;
     return the_params;
 }
 
@@ -258,6 +261,7 @@ hclh_local_params* init_hclh_local(uint32_t phys_core, hclh_global_params* the_p
     }
     while(the_params->init_done[phys_core/CORES_PER_SOCKET]!=INIT_VAL) {}
     local_params->my_queue = the_params->local_queues[phys_core/CORES_PER_SOCKET];
+    MEM_BARRIER;
     return local_params;
 }
 

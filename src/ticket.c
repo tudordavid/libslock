@@ -218,6 +218,7 @@ ticketlock_t* init_ticketlocks(uint32_t num_locks)
         the_locks[i].head=1;
         the_locks[i].tail=0;
     }
+    MEM_BARRIER;
     return the_locks;
 }
 

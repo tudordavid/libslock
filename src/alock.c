@@ -108,6 +108,7 @@ lock_shared_t** init_alock_array_global(uint32_t num_locks, uint32_t num_process
         the_locks[i]->flags[0].flag=1;
         the_locks[i]->tail=0;
     }
+    MEM_BARRIER;
     return the_locks;
 }
 
@@ -122,6 +123,7 @@ array_lock_t** init_alock_array_local(uint32_t thread_num, uint32_t num_locks, l
         local_locks[i]->my_index=0;
         local_locks[i]->shared_data = the_locks[i];
     }
+    MEM_BARRIER;
     return local_locks;
 }
 
@@ -132,6 +134,7 @@ lock_shared_t* init_alock_global(uint32_t num_processes) {
     the_lock->size = num_processes;
     the_lock->flags[0].flag=1;
     the_lock->tail=0;
+    MEM_BARRIER;
     return the_lock;
 }
 
@@ -143,6 +146,7 @@ array_lock_t* init_alock_local(uint32_t thread_num, lock_shared_t* the_lock) {
     array_lock_t* local_lock = (array_lock_t*) malloc(sizeof(array_lock_t));
     local_lock->my_index=0;
     local_lock->shared_data = the_lock;
+    MEM_BARRIER;
     return local_lock;
 }
 
