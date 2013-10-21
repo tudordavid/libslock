@@ -127,7 +127,7 @@ do
 rm ./results/atomic_ops_${prim}_${n}_${entries}.out
 sleep 1
 echo running atomic test: primitive = ${prim} lock = threads = ${n} entires = ${entires} duration = ${duration} pause = ${pause_atomic} 
-${prog_prefix}atomic_test -n ${n} -e ${entries} -p ${pause_atomic} -d ${duration} >> ./results/atomic_ops_${prim}_${n}_${entries}.out
+${prog_prefix}atomic_bench -b 0 -n ${n} -e ${entries} -p ${pause_atomic} -d ${duration} >> ./results/atomic_ops_${prim}_${n}_${entries}.out
 ops=`tail -n 1 ./results/atomic_ops_${prim}_${n}_${entries}.out | awk '{print $3}'`
 if [ "${max_val}" -le "$ops" ]; then
     max_val=$ops
@@ -156,7 +156,7 @@ do
 rm ./results/atomic_latency_${prim}_${n}_${entries}.out
 sleep 1
 echo running atomic latency: primitive = ${prim} lock = threads = ${n} entires = ${entires} duration = ${duration} pause = 450 
-${prog_prefix}atomic_latency -n ${n} -e ${entries} -p 450 -d ${duration} >> ./results/atomic_latency_${prim}_${n}_${entries}.out
+${prog_prefix}atomic_bench -b 2 -n ${n} -e ${entries} -p 450 -d ${duration} >> ./results/atomic_latency_${prim}_${n}_${entries}.out
 ops=`tail -n 1 ./results/atomic_latency_${prim}_${n}_${entries}.out | awk '{print $1}'`
 if [ "${min_val}" -ge "$ops" ]; then
     min_val=$ops
