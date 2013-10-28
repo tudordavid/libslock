@@ -12,9 +12,9 @@ endif
 ifndef PLATFORM
 #PLATFORM=-DSPARC
 #PLATFORM=-DTILERA
-#PLATFORM=-DXEON
-#PLATFORM=-DOPTERON 
-PLATFORM=-DDEFAULT
+# PLATFORM=-DXEON
+# PLATFORM=-DOPTERON 
+# PLATFORM=-DDEFAULT
 endif
 
 ifeq ($(PLATFORM), -DDEFAULT)
@@ -61,7 +61,7 @@ ifndef LOCK_VERSION
   # LOCK_VERSION=-DUSE_MCS_LOCKS
   # LOCK_VERSION=-DUSE_ARRAY_LOCKS
   # LOCK_VERSION=-DUSE_RW_LOCKS
-  # LOCK_VERSION=-DUSE_TTAS_LOCKS
+  # LOCK_VERSION=-DUSE_CLH_LOCKS
   LOCK_VERSION=-DUSE_TICKET_LOCKS
   # LOCK_VERSION=-DUSE_MUTEX_LOCKS
   # LOCK_VERSION=-DUSE_HTICKET_LOCKS
@@ -161,4 +161,4 @@ htlock_test: htlock.o bmarks/htlock_test.c Makefile
 	$(GCC) -O0 -D_GNU_SOURCE $(COMPILE_FLAGS) $(PLATFORM) $(DEBUG_FLAGS) $(INCLUDES) bmarks/htlock_test.c -o htlock_test htlock.o $(LIBS)
 
 clean:
-	rm -f *.o locks mcs_test hclh_test bank_one bank_simple bank stress_latency test_correctness stress_one stress_test  atomic_bench uncontended individual_ops trylock_test htlock_test libsync.a
+	rm -f *.o locks mcs_test hclh_test bank_one bank_simple bank* stress_latency* test_correctness stress_one stress_test*  atomic_bench uncontended individual_ops trylock_test htlock_test measure_contention libsync.a
