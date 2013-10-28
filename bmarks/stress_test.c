@@ -18,7 +18,8 @@
 
 uint64_t c[2] = {0, 0};
 
-#define XSTR(s) #s
+#define STR(s) #s
+#define XSTR(s) STR(s)
 
 //number of concurres threads
 #define DEFAULT_NUM_THREADS 1
