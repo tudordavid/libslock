@@ -1,5 +1,7 @@
-/*.o
-/*~
+*.o
+*~
+/#README.md#
+/atomic_bench
 /atomic_latency
 /atomic_success
 /atomic_test
@@ -9,8 +11,10 @@
 /htlock_test
 /individual_ops
 /libsync.a
+/measure_contention
 /stress_latency
 /stress_one
 /stress_test
+/test_correctness
 /trylock_test
 /uncontended

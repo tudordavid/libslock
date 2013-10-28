@@ -81,6 +81,12 @@ ticketlock_t create_ticketlock();
 ticketlock_t* init_ticketlocks(uint32_t num_locks);
 void init_thread_ticketlocks(uint32_t thread_num);
 void free_ticketlocks(ticketlock_t* the_locks);
+
+#if defined(MEASURE_CONTENTION)
+extern void ticket_print_contention_stats(void);
+
+#endif	/* MEASURE_CONTENTION */
+
 #endif
 
 

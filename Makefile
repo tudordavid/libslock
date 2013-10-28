@@ -70,7 +70,7 @@ INCLUDES := -I$(MAININCLUDE)
 OBJ_FILES :=  mcs.o clh.o ttas.o spinlock.o rw_ttas.o ticket.o alock.o hclh.o gl_lock.o htlock.o
 
 
-all:  bank bank_one bank_simple test_correctness stress_one stress_test stress_latency atomic_bench individual_ops uncontended trylock_test htlock_test libsync.a
+all:  bank bank_one bank_simple test_correctness stress_one stress_test stress_latency atomic_bench individual_ops uncontended trylock_test htlock_test measure_contention libsync.a
 	@echo "############### Used: " $(LOCK_VERSION) " on " $(PLATFORM) " with " $(OPTIMIZE)
 
 libsync.a: ttas.o rw_ttas.o ticket.o clh.o mcs.o hclh.o alock.o htlock.o include/atomic_ops.h include/utils.h include/lock_if.h
@@ -87,6 +87,9 @@ rw_ttas.o: src/rw_ttas.c
 
 ticket.o: src/ticket.c 
 	$(GCC) -D_GNU_SOURCE $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(INCLUDES) -c src/ticket.c $(LIBS)
+
+ticket_contention.o: src/ticket.c 
+	$(GCC) -D_GNU_SOURCE -DMEASURE_CONTENTION $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(INCLUDES) -c src/ticket.c -o ticket_contention.o $(LIBS)
 
 gl_lock.o: src/gl_lock.c 
 	$(GCC) -D_GNU_SOURCE $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(INCLUDES) -c src/gl_lock.c $(LIBS)
@@ -117,6 +120,9 @@ bank_simple: bmarks/bank_simple.c $(OBJ_FILES) Makefile
 
 stress_test: bmarks/stress_test.c $(OBJ_FILES) Makefile
 	$(GCC) $(LOCK_VERSION) $(ALTERNATE_SOCKETS) $(NO_DELAYS) -D_GNU_SOURCE  $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(INCLUDES) $(OBJ_FILES) bmarks/stress_test.c -o stress_test $(LIBS)
+
+measure_contention: bmarks/measure_contention.c $(OBJ_FILES) ticket_contention.o Makefile
+	$(GCC) -DUSE_TICKET_LOCKS $(ALTERNATE_SOCKETS) $(NO_DELAYS) -DMEASURE_CONTENTION -D_GNU_SOURCE  $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(INCLUDES) ticket_contention.o bmarks/measure_contention.c -o measure_contention $(LIBS)
 
 stress_one: bmarks/stress_one.c $(OBJ_FILES) Makefile
 	$(GCC) $(LOCK_VERSION) $(ALTERNATE_SOCKETS) $(NO_DELAYS) -D_GNU_SOURCE  $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(INCLUDES) $(OBJ_FILES) bmarks/stress_one.c -o stress_one $(LIBS)
