@@ -12,9 +12,20 @@ endif
 ifndef PLATFORM
 #PLATFORM=-DSPARC
 #PLATFORM=-DTILERA
-#PLATFORM=-DSPARC
 #PLATFORM=-DXEON
-PLATFORM=-DOPTERON 
+#PLATFORM=-DOPTERON 
+PLATFORM=-DDEFAULT
+endif
+
+ifeq ($(PLATFORM), -DDEFAULT)
+CORE_NUM := $(shell nproc)
+ifneq ($(CORE_SPEED_KHz), )
+COMPILE_FLAGS += -DCORE_NUM=${CORE_NUM}
+else
+COMPILE_FLAGS += -DCORE_NUM=8
+endif
+$(info ********************************** Using as a default number of cores: $(CORE_NUM) on 1 socket)
+$(info ********************************** Is this correct? If not, fix it in platform_defs.h)
 endif
 
 ifeq ($(PLATFORM), -DOPTERON)	#allow OPTERON_OPTIMIZE only for OPTERON platform
