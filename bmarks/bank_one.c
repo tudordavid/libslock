@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
+#include <malloc.h>
 #ifndef __sparc__
 #include <numa.h>
 #endif
@@ -53,8 +54,8 @@ int use_locks;
 __thread unsigned long * seeds;
 __thread uint32_t phys_id;
 __thread uint32_t cluster_id;
-volatile lock_global_data the_lock;
-__attribute__((aligned(CACHE_LINE_SIZE))) volatile lock_local_data * local_th_data;
+lock_global_data the_lock;
+__attribute__((aligned(CACHE_LINE_SIZE))) lock_local_data * local_th_data;
 
 /* ################################################################### *
  * BANK ACCOUNTS
@@ -78,15 +79,6 @@ typedef struct bank {
 int read_accounts(volatile account_t *a1, volatile account_t *a2,  int thread_id)
 {
     int amount=0;
-    //lock ordering
-    int n1=a1->number;
-    int n2=a2->number;
-    if (a1->number < a2->number) {
-        n1=a2->number;
-        n2=a1->number;
-    }
-
-    //local_lock_read(&gl);
     if (use_locks!=0){
     acquire_read(&(local_th_data[thread_id]),&the_lock);
     }
@@ -105,14 +97,6 @@ int read_accounts(volatile account_t *a1, volatile account_t *a2,  int thread_id
 int transfer(volatile account_t *src, volatile account_t *dst, int amount, int thread_id)
 {
     /* Allow overdrafts */
-    //lock ordering
-    int n1=src->number;
-    int n2=dst->number;
-    if (src->number < dst->number) {
-        n1=dst->number;
-        n2=src->number;
-    }
-    //local_lock_write(&gl);
     if (use_locks!=0) {
     acquire_write(&(local_th_data[thread_id]),&the_lock);
     }

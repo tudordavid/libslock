@@ -8,7 +8,7 @@
 #include <sys/time.h>
 #include <time.h>
 #ifndef __sparc__
-#include <numa.h>
+#  include <numa.h>
 #endif
 #include "utils.h"
 #include "atomic_ops.h"
@@ -94,16 +94,18 @@ void *test_latency(void *data)
     phys_id = the_cores[d->id];
     set_cpu(phys_id);
     int rand_max;
+#if defined(TEST_CTR)
     data_type old_data;
     data_type new_data;
-    uint64_t res;
+#endif
+    volatile uint64_t res;
 
     seeds = seed_rand();
     rand_max = num_entries - 1;
 
     unsigned long do_not_measure=0;
     int entry=0;
-    ticks t1,t2;
+    ticks t1 = 0, t2 = 0;
     barrier_cross(d->barrier);
 
     while (stop == 0) {
@@ -117,13 +119,13 @@ void *test_latency(void *data)
         } else {
             if (!do_not_measure) {
                 t1=getticks();
-#ifdef __tile__
+#  ifdef __tile__
                 MEM_BARRIER;
-#endif
+#  endif
                 res = CAS_U8(&(the_data[entry].data),0,1);
-#ifdef __tile__
+#  ifdef __tile__
                 MEM_BARRIER;
-#endif
+#  endif
                 t2=getticks();
 
             } else {
@@ -138,13 +140,13 @@ void *test_latency(void *data)
                 res = SWAP_U8(&(the_data[entry].data),1);
             } else {
                 t1=getticks(); 
-#ifdef __tile__
+#  ifdef __tile__
                 MEM_BARRIER;
-#endif
+#  endif
                res = SWAP_U8(&(the_data[entry].data),1);
-#ifdef __tile__
+#  ifdef __tile__
                 MEM_BARRIER;
-#endif
+#  endif
 
                 t2=getticks();
             }
@@ -157,16 +159,16 @@ void *test_latency(void *data)
             } while (CAS_U8(&(the_data[entry].data),old_data,new_data)!=old_data);
         } else {
             t1=getticks();
-#ifdef __tile__
+#  ifdef __tile__
                 MEM_BARRIER;
-#endif
+#  endif
             do {
                 old_data=the_data[entry].data;
                 new_data=old_data+1;
             } while (CAS_U8(&(the_data[entry].data),old_data,new_data)!=old_data);
-#ifdef __tile__
+#  ifdef __tile__
                 MEM_BARRIER;
-#endif
+#  endif
             t2=getticks();
         }
 #elif defined(TEST_TAS)
@@ -174,13 +176,13 @@ void *test_latency(void *data)
             res = TAS_U8(&(the_data[entry].data));
         } else {
             t1=getticks();
-#ifdef __tile__
+#  ifdef __tile__
                 MEM_BARRIER;
-#endif
+#  endif
             res = TAS_U8(&(the_data[entry].data));
-#ifdef __tile__
+#  ifdef __tile__
                 MEM_BARRIER;
-#endif
+#  endif
             t2=getticks();
         }
         if (res==0) {
@@ -191,13 +193,13 @@ void *test_latency(void *data)
             FAI_U8(&(the_data[entry].data));
         } else {
             t1=getticks();
-#ifdef __tile__
+#  ifdef __tile__
                 MEM_BARRIER;
-#endif
+#  endif
             FAI_U8(&(the_data[entry].data));
-#ifdef __tile__
+#  ifdef __tile__
                 MEM_BARRIER;
-#endif
+#  endif
             t2=getticks();
         }
 #else
@@ -212,6 +214,13 @@ void *test_latency(void *data)
             cpause(op_pause);
         }
     }
+    
+     /* avoid warning of unused var*/
+    if (res == 12345654)
+      {
+	printf("%d", (int) res);
+      }
+
     return NULL;
 }
 
@@ -221,8 +230,10 @@ void *test_success(void *data)
     phys_id = the_cores[d->id];
     set_cpu(phys_id);
     int rand_max;
+#if defined(TEST_CTR)
     data_type old_data;
     data_type new_data;
+#endif
     uint64_t res;
 
     seeds = seed_rand();
@@ -245,19 +256,19 @@ void *test_success(void *data)
             } while (res!=0);
         }
 #elif defined(TEST_SWAP)
-#ifdef __sparc__
+#  ifdef __sparc__
         if ((d->num_operations)&1) {
             res = SWAP_U32(&(the_data[entry].data),0);
         } else {
             res = SWAP_U32(&(the_data[entry].data),1);
         }
-#else
+#  else
         if ((d->num_operations)&1) {
             res = SWAP_U8(&(the_data[entry].data),0);
         } else {
             res = SWAP_U8(&(the_data[entry].data),1);
         }
-#endif
+#  endif
 #elif defined(TEST_CTR)
         do {
             old_data=the_data[entry].data;
@@ -289,9 +300,11 @@ void *test_throughput(void *data)
     phys_id = the_cores[d->id];
     set_cpu(phys_id);
     int rand_max;
+#if defined(TEST_CTR)
     data_type old_data;
     data_type new_data;
-    uint64_t res;
+#endif
+    volatile uint64_t res;
 
     seeds = seed_rand();
     rand_max = num_entries - 1;
@@ -309,20 +322,20 @@ void *test_throughput(void *data)
             res = CAS_U8(&(the_data[entry].data),0,1);
         }
 #elif defined(TEST_SWAP)
-#ifdef __sparc__
+#  ifdef __sparc__
         if ((d->num_operations)&1) {
             res = SWAP_U32(&(the_data[entry].data),0);
         } else {
             res = SWAP_U32(&(the_data[entry].data),1);
         }
 
-#else
+#  else
         if ((d->num_operations)&1) {
             res = SWAP_U8(&(the_data[entry].data),0);
         } else {
             res = SWAP_U8(&(the_data[entry].data),1);
         }
-#endif
+#  endif
 #elif defined(TEST_CTR)
         do {
             old_data=the_data[entry].data;
@@ -343,6 +356,13 @@ void *test_throughput(void *data)
             cpause(op_pause);
         }
     }
+
+     /* avoid warning of unused var*/
+    if (res == 12345654)
+      {
+	printf("%d", (int) res);
+      }
+
     return NULL;
 }
 

@@ -114,13 +114,8 @@ void *test(void *data)
 {
   int rand_max;
     thread_data_t *d = (thread_data_t *)data;
-//#ifdef __sparc__
     phys_id = the_cores[d->id];
     cluster_id = get_cluster(phys_id);
-
-//#else
-//    phys_id = d->id;
-//#endif
     rand_max = num_locks - 1;
 
   seeds = seed_rand();
@@ -129,7 +124,7 @@ void *test(void *data)
 
     local_th_data[d->id] = init_lock_array_local(phys_id, num_locks, the_locks);
 
-  uint64_t trylock_acq = 0, trylock_fail = 0;
+  /* uint64_t trylock_acq = 0, trylock_fail = 0; */
 
   /* Wait on barrier */
   barrier_cross(d->barrier);

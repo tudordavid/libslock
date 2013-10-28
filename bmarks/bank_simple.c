@@ -51,7 +51,7 @@ static volatile int stop;
 static global_lock gl;
 
 int use_locks;
-__thread unsigned long * seeds;
+__thread unsigned long* seeds;
 __thread uint32_t phys_id;
 __thread uint32_t cluster_id;
 
@@ -220,7 +220,6 @@ void *test(void *data)
 {
   int rand_max;
   thread_data_t *d = (thread_data_t *)data;
-  unsigned short seed[3];
   seeds = seed_rand();
 
 //#ifdef __sparc__
@@ -229,11 +228,6 @@ void *test(void *data)
 //#else
 //    phys_id = d->id;
 //#endif
-
-  /* Initialize seed (use rand48 as rand is poor) */
-  seed[0] = (unsigned short)rand_r(&d->seed);
-  seed[1] = (unsigned short)rand_r(&d->seed);
-  seed[2] = (unsigned short)rand_r(&d->seed);
 
   rand_max = d->bank->size - 1;
 

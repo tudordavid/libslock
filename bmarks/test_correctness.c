@@ -64,8 +64,8 @@ static volatile int stop;
 __thread unsigned long* seeds;
 __thread uint32_t phys_id;
 __thread uint32_t cluster_id;
-volatile lock_global_data the_lock;
-__attribute__((aligned(CACHE_LINE_SIZE))) volatile lock_local_data* local_th_data;
+lock_global_data the_lock;
+__attribute__((aligned(CACHE_LINE_SIZE))) lock_local_data* local_th_data;
 
 typedef struct shared_data{
     volatile uint64_t counter;
@@ -310,7 +310,7 @@ int main(int argc, char **argv)
 #ifdef PRINT_OUTPUT
     printf("Duration      : %d (ms)\n", duration);
 #endif
-    printf("Counter total : %llu, Expected: %llu\n", protected_data->counter,acquires);
+    printf("Counter total : %llu, Expected: %llu\n", (unsigned long long) protected_data->counter, (unsigned long long) acquires);
     if (protected_data->counter != acquires) {
         printf("Incorrect lock behavior!\n");
     }

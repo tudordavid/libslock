@@ -46,8 +46,8 @@ static volatile int stop;
 __thread unsigned long* seeds;
 __thread uint32_t phys_id;
 __thread uint32_t cluster_id;
-volatile lock_global_data the_lock;
-__attribute__((aligned(CACHE_LINE_SIZE))) volatile lock_local_data* local_th_data;
+lock_global_data the_lock;
+__attribute__((aligned(CACHE_LINE_SIZE))) lock_local_data* local_th_data;
 
 typedef struct shared_data{
     volatile char the_data[64];
@@ -114,16 +114,9 @@ typedef struct thread_data {
 
 void *test(void *data)
 {
-  int rand_max;
     thread_data_t *d = (thread_data_t *)data;
-//#ifdef __sparc__
     phys_id = the_cores[d->id];
     cluster_id = get_cluster(phys_id);
-
-//#else
-//    phys_id = d->id;
-//#endif
-    rand_max = num_locks - 1;
 
   seeds = seed_rand();
 
@@ -131,7 +124,7 @@ void *test(void *data)
 
     local_th_data[d->id] = init_lock_local(phys_id, the_lock);
 
-  uint64_t trylock_acq = 0, trylock_fail = 0;
+  /* uint64_t trylock_acq = 0, trylock_fail = 0; */
 
   /* Wait on barrier */
   barrier_cross(d->barrier);

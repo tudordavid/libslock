@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
+#include <malloc.h>
 #ifndef __sparc__
 #include <numa.h>
 #endif
