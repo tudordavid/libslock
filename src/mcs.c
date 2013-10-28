@@ -149,7 +149,6 @@ void end_mcs_array_global(mcs_global_params* the_locks, uint32_t size) {
 }
 
 mcs_global_params init_mcs_global() {
-    uint32_t i;
     mcs_global_params the_lock;
     the_lock.the_lock=(mcs_lock*)malloc(sizeof(mcs_lock));
     *(the_lock.the_lock)=0;

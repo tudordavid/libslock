@@ -115,7 +115,6 @@ void end_clh_array_global(clh_global_params* the_locks, uint32_t size) {
 
 clh_global_params init_clh_global() {
     clh_global_params the_params;
-    uint32_t i;
     the_params.the_lock=(clh_lock*)malloc(sizeof(clh_lock));
     clh_qnode * a_node = (clh_qnode *) malloc(sizeof(clh_qnode));
     a_node->locked=0;
@@ -128,7 +127,6 @@ clh_local_params init_clh_local(uint32_t thread_num) {
     set_cpu(thread_num);
 
     //init its qnodes
-    uint32_t i;
     clh_local_params local_params;
     local_params.my_qnode = (clh_qnode*) malloc(sizeof(clh_qnode));
     local_params.my_qnode->locked=0;

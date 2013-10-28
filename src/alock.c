@@ -128,7 +128,6 @@ array_lock_t** init_alock_array_local(uint32_t thread_num, uint32_t num_locks, l
 }
 
 lock_shared_t* init_alock_global(uint32_t num_processes) {
-    uint32_t i;
     lock_shared_t* the_lock = (lock_shared_t*) malloc(sizeof(lock_shared_t));
     bzero((void*)the_lock,sizeof(lock_shared_t));
     the_lock->size = num_processes;
@@ -142,7 +141,6 @@ array_lock_t* init_alock_local(uint32_t thread_num, lock_shared_t* the_lock) {
     //assign the thread to the correct core
     set_cpu(thread_num);
 
-    uint32_t i;
     array_lock_t* local_lock = (array_lock_t*) malloc(sizeof(array_lock_t));
     local_lock->my_index=0;
     local_lock->shared_data = the_lock;
