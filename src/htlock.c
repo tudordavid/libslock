@@ -103,7 +103,7 @@ init_thread_htlocks(uint32_t phys_core)
     set_cpu(phys_core);
 
 #if defined(XEON)
-    uint32_t real_core_num;
+    uint32_t real_core_num = 0;
     uint32_t i;
     for (i = 0; i < (NUMBER_OF_SOCKETS * CORES_PER_SOCKET); i++) 
     {

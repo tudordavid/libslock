@@ -234,6 +234,7 @@ hclh_local_params* init_hclh_local(uint32_t phys_core, hclh_global_params* the_p
 #ifdef XEON
     __sync_synchronize();
     uint32_t real_core_num = 0;
+    int i;
     for (i = 0; i < (NUMBER_OF_SOCKETS * CORES_PER_SOCKET); i++) {
         if (the_cores[i]==phys_core) {
             real_core_num = i;
