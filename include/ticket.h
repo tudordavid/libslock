@@ -84,7 +84,7 @@ void free_ticketlocks(ticketlock_t* the_locks);
 
 #if defined(MEASURE_CONTENTION)
 extern void ticket_print_contention_stats(void);
-
+double ticket_avg_queue(void);
 #endif	/* MEASURE_CONTENTION */
 
 #endif
