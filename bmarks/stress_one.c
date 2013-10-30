@@ -124,9 +124,6 @@ void *test(void *data)
 
     local_th_data[d->id] = init_lock_local(phys_id, the_lock);
 
-  /* uint64_t trylock_acq = 0, trylock_fail = 0; */
-
-  /* Wait on barrier */
   barrier_cross(d->barrier);
 
   int lock_to_acq=0;
@@ -134,19 +131,10 @@ void *test(void *data)
     lock_local_data local_d = local_th_data[d->id];
     while (stop == 0) {
         acquire_lock(&local_d,&the_lock);
-//#ifndef NO_DELAYS
         if (acq_duration > 0)
         {
             cpause(acq_duration);
         }
-//#endif
-        //        protected_data[0].the_data[1]=protected_data[0].the_data[2] % 100 + d->id;
-        //        protected_data[1].the_data[2]=protected_data[1].the_data[3] % 100 + d->id;
-        //        protected_data[2].the_data[3]=protected_data[2].the_data[4] % 100 + d->id;
-        //        protected_data[3].the_data[4]=protected_data[3].the_data[5] % 100 + d->id;
-
-        /* printf("lock: %3d :: data from %2d\n", lock_to_acq, lock_to_acq*rand_max); */
-        /* udelay(100000); */
         uint32_t i;
 #ifndef NO_DELAYS
     for (i = 0; i < cl_access; i++)
@@ -158,20 +146,11 @@ void *test(void *data)
 	}
       }
 #endif
-        MEM_BARRIER;
         release_lock(cluster_id,&local_d,&the_lock);
-MEM_BARRIER;
-//#ifndef NO_DELAYS
         if (acq_delay>0) {
+            COMPILER_BARRIER;
             cpause(acq_delay);
         }
-//#endif
-//#ifdef USE_SPINLOCK_LOCKS
-//    cpause(fair_delay);
-//#elif defined(USE_TTAS_LOCKS)
-//    cpause(fair_delay);
-//#elif defined(USE_TICKET_LOCKS)
-//    cpause(fair_delay);
 #if defined(USE_MUTEX_LOCKS)
     if (acq_delay>0)
         cpause(mutex_delay);
