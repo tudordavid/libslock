@@ -16,10 +16,10 @@
 #include "lock_if.h"
 #include "atomic_ops.h"
 
-
 #define DETAILED_LATENCIES
 
-#define XSTR(s) #s
+#define STR(s) #s
+#define XSTR(s) STR(s)
 
 //number of concurres threads
 #define DEFAULT_NUM_THREADS 1

@@ -16,7 +16,8 @@
 #include "utils.h"
 #include "lock_if.h"
 
-#define XSTR(s) #s
+#define STR(s) #s
+#define XSTR(s) STR(s)
 
 //number of concurres threads
 #define DEFAULT_NUM_THREADS 2
@@ -245,7 +246,7 @@ int main(int argc, char **argv)
                         "Options:\n"
                         "  -h, --help\n"
                         "        Print this message\n"
-                        "  -l, --lcoks <int>\n"
+                        "  -l, --locks <int>\n"
                         "        Number of locks in the test (default=" XSTR(DEFAULT_NUM_LOCKS) ")\n"
                         "  -d, --duration <int>\n"
                         "        Test duration in milliseconds (0=infinite, default=" XSTR(DEFAULT_DURATION) ")\n"
