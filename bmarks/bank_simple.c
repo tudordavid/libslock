@@ -93,7 +93,6 @@ check(account_t *a1,  int thread_id)
 
   if (use_locks != 0) 
     {
-      MEM_BARRIER;
       release_read(cluster_id, &local_th_data[thread_id][n1],&the_locks[n1]);
     }
   //local_unlock_read(&gl);
@@ -117,7 +116,6 @@ deposit(account_t *src, int amount, int thread_id)
 
   if (use_locks!=0)
     {
-      MEM_BARRIER;
       release_write(cluster_id, &local_th_data[thread_id][n1],&the_locks[n1]);
     }
   //local_unlock_write(&gl);
@@ -146,7 +144,6 @@ withdraw(account_t *src, int amount, int thread_id)
 
   if (use_locks!=0)
     {
-      MEM_BARRIER;
       release_write(cluster_id, &local_th_data[thread_id][n1],&the_locks[n1]);
     }
   //local_unlock_write(&gl);

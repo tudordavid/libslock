@@ -96,7 +96,6 @@ int read_accounts(volatile account_t *a1, volatile account_t *a2,  int thread_id
     amount+=a1->balance;
     amount+=a2->balance;
     if (use_locks!=0) {
-    MEM_BARRIER;
     release_read(cluster_id, &local_th_data[thread_id][n2],&the_locks[n2]);
     release_read(cluster_id, &local_th_data[thread_id][n1],&the_locks[n1]);
     }
@@ -124,7 +123,6 @@ int transfer(volatile account_t *src, volatile account_t *dst, int amount, int t
     src->balance-=amount;
     dst->balance+=amount;
     if (use_locks!=0) {
-    MEM_BARRIER;
     release_write(cluster_id, &local_th_data[thread_id][n2],&the_locks[n2]);
     release_write(cluster_id, &local_th_data[thread_id][n1],&the_locks[n1]);
     }
