@@ -1,3 +1,10 @@
+/* 
+ * File: measure_contention.c
+ * Author: Vasileios Trigonakis <vasileios.trigonakis@epfl.ch>
+ *
+ * Description: measures the avg queuing per lock acquisition
+ * using ticket locks
+ */
 
 #include <assert.h>
 #include <getopt.h>
@@ -119,6 +126,8 @@ typedef struct thread_data
 } thread_data_t;
 
 
+double* avg_q_stats;
+
 void*
 test(void *data)
 {
@@ -183,6 +192,7 @@ test(void *data)
 
 
   ticket_print_contention_stats();
+  avg_q_stats[d->id] = ticket_avg_queue();
 
   free_lock_array_local(local_th_data[d->id], num_locks);
   return NULL;
@@ -331,6 +341,9 @@ int main(int argc, char **argv)
   assert(acq_delay >= 0);
   assert(cl_access >= 0);
 
+  avg_q_stats = (double*) malloc(num_threads * sizeof(double));
+  assert(avg_q_stats != NULL);
+
   if (cl_access > 0)
     {
       protected_data = (shared_data*) calloc(cl_access * num_locks, sizeof(shared_data));
@@ -424,10 +437,25 @@ int main(int argc, char **argv)
 
   duration = (end.tv_sec * 1000 + end.tv_usec / 1000) - (start.tv_sec * 1000 + start.tv_usec / 1000);
 
+  double avg_q = 0;
   unsigned long acquires = 0;
-  for (i = 0; i < num_threads; i++) {
-    acquires += data[i].num_acquires;
-  }
+  for (i = 0; i < num_threads; i++) 
+    {
+      avg_q += avg_q_stats[i];
+      acquires += data[i].num_acquires;
+    }
+
+  avg_q /= num_threads;
+
+  printf("Total avg queuing: %10.3f which means (on avg):\n", avg_q);
+  if (avg_q <= 1)
+    {
+      printf("  %3.1f%% of the requests faced queuing\n", 100*avg_q);
+    }
+  else
+    {
+      printf("  ALL faced queuing\n");
+    }
 #ifdef PRINT_OUTPUT
   printf("Duration      : %d (ms)\n", duration);
 #endif

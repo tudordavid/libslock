@@ -249,4 +249,12 @@ ticket_print_contention_stats()
   printf("#Acquires: %10llu / #Total queuing: %10llu / Avg. queuing: %.3f\n",
 	 (long long unsigned) ticket_acquires, (long long unsigned) ticket_queued_total, avg_q);
 }
+
+double
+ticket_avg_queue()
+{
+  double avg_q = ticket_queued_total / (double) ticket_acquires;
+  return avg_q;
+}
+
 #endif	/* MEASURE_CONTENTION */
