@@ -109,58 +109,43 @@ void *test(void *data)
 {
     thread_data_t *d = (thread_data_t *)data;
 
-//#ifdef __sparc__
     phys_id = d->the_core;
     cluster_id = get_cluster(phys_id);
-//#else
-//    phys_id = d->id;
-//#endif
+
     /* local initialization of locks */
     local_th_data[d->id] = init_lock_array_local(phys_id, num_locks, the_locks);
 
-    /* Wait on barrier */
     barrier_cross(d->barrier);
     ticks begin;
     ticks begin_release;
 
     local_data local_d = local_th_data[d->id];
     while (stop == 0) {
-
-        //        acquire_lock(0,local_d,the_locks);
-
         uint32_t my_ticket = IAF_U32(&tail);
         while (head != my_ticket) {
             PAUSE;
         }
-#ifdef XEON
-	//__sync_synchronize();
-	MEM_BARRIER;
-#endif
+        COMPILER_BARRIER;
         begin = getticks();
+        COMPILER_BARRIER;
         acquire_lock(&local_d[1],&the_locks[1]);
-#ifdef XEON
-	__sync_synchronize();
-#endif
+        COMPILER_BARRIER;
         ticks end = getticks() - begin - correction;
         d->acquire_time+=end;
-#ifdef XEON
-	MEM_BARRIER;
-#endif
+        COMPILER_BARRIER;
         begin_release = getticks();
         release_lock(cluster_id,&local_d[1],&the_locks[1]);
         MEM_BARRIER;
-
-#ifdef XEON
-//	__sync_synchronize();
-#endif
+        COMPILER_BARRIER;
         d->release_time+=getticks() - begin_release - correction;
-#ifdef XEON
-//	__sync_synchronize();
-#endif
 
 #ifdef PRINT_OUTPUT
         fprintf(stderr, "%d %llu\n",d->id, (unsigned long long int) end);
 #endif
+#ifdef __tile__
+        MEM_BARRIER;
+#endif
+        COMPILER_BARRIER;
         head++;
         d->num_acquires++;
     }

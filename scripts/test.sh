@@ -442,10 +442,10 @@ fi
 
 l_small=1
 l_large=512
-acq_dur=210
+acq_dur=0
 inter_acq_dur=0
 inter_acq_dur_one=100
-cl=0
+cl=1
 the_write=0
 
 if [ ${run_min_max_stress} -eq 1 ]
@@ -506,9 +506,9 @@ fi
 
 #scalability
 
-acq_dur=210
+acq_dur=0
 inter_acq_dur=0
-cl=0
+cl=1
 the_write=0
 stress_locks="4 16 32 128"
 
@@ -540,7 +540,7 @@ do
 rm ./results/temporary.out
 
 echo running stress test rw: lock = ${prefix} threads = ${n} locks = ${total_locks} duration = ${duration} acq_duration = ${acq_dur} inter_acq_delay = ${the_pause} 
-${prog_prefix}stress_test -n ${n} -l ${total_locks} -w ${the_write} -d ${duration} -a ${acq_dur} -p ${the_pause} -c ${cl}>> ./results/temporary.out
+${prog_prefix}stress_test -n ${n} -l ${total_locks} -w ${the_write} -d ${duration} -a ${acq_dur} -p ${the_pause} -c ${cl} >> ./results/temporary.out
 ops=`tail -n 1 ./results/temporary.out | awk '{print $3}'`
 if [ "${max_val}" -le "$ops" ]; then
     max_val=$ops
