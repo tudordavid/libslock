@@ -37,8 +37,6 @@ uint64_t c[2] = {0, 0};
 #define DEFAULT_DURATION 10000
 //if do_writes is 0, the test only reads cache lines, else it also writes them
 #define DEFAULT_DO_WRITES 0
-//default seed
-#define DEFAULT_SEED 0
 
 static volatile int stop;
 
@@ -63,8 +61,6 @@ int acq_delay;
 int fair_delay;
 int mutex_delay;
 int cl_access;
-int seed;
-
 
 typedef struct barrier {
     pthread_cond_t complete;
@@ -104,7 +100,6 @@ typedef struct thread_data {
         {
             barrier_t *barrier;
             unsigned long num_acquires;
-            unsigned int seed;
             int id;
         };
         char padding[CACHE_LINE_SIZE];
@@ -113,24 +108,24 @@ typedef struct thread_data {
 
 void *test(void *data)
 {
-  int rand_max;
+    int rand_max;
     thread_data_t *d = (thread_data_t *)data;
     phys_id = the_cores[d->id];
     cluster_id = get_cluster(phys_id);
     rand_max = num_locks - 1;
 
-  seeds = seed_rand();
+    seeds = seed_rand();
 
-  /* local initialization of locks */
+    /* local initialization of locks */
 
     local_th_data[d->id] = init_lock_array_local(phys_id, num_locks, the_locks);
 
-  /* uint64_t trylock_acq = 0, trylock_fail = 0; */
+    /* uint64_t trylock_acq = 0, trylock_fail = 0; */
 
-  /* Wait on barrier */
-  barrier_cross(d->barrier);
+    /* Wait on barrier */
+    barrier_cross(d->barrier);
 
-  int lock_to_acq;
+    int lock_to_acq;
 
     local_data local_d = local_th_data[d->id];
     while (stop == 0) {
@@ -146,14 +141,14 @@ void *test(void *data)
         }
         uint32_t i;
 #ifndef NO_DELAYS
-    for (i = 0; i < cl_access; i++)
-      {
-	if (do_writes==1) {
-	  protected_data[i + protected_offsets[lock_to_acq]].the_data[0]+=d->id;
-	} else {
-	  protected_data[i + protected_offsets[lock_to_acq]].the_data[0]= d->id;
-	}
-      }
+        for (i = 0; i < cl_access; i++)
+        {
+            if (do_writes==1) {
+                protected_data[i + protected_offsets[lock_to_acq]].the_data[0]+=d->id;
+            } else {
+                protected_data[i + protected_offsets[lock_to_acq]].the_data[0]= d->id;
+            }
+        }
 #endif
         release_lock(cluster_id,&local_d[lock_to_acq],&the_locks[lock_to_acq]);
         if (acq_delay>0) {
@@ -164,14 +159,14 @@ void *test(void *data)
             cpause(acq_delay);
         }
 #if defined(USE_MUTEX_LOCKS)
-    if (acq_delay>0)
-        cpause(mutex_delay);
+        if (acq_delay>0)
+            cpause(mutex_delay);
 #endif
         d->num_acquires++;
     }
 
-  free_lock_array_local(local_th_data[d->id], num_locks);
-  return NULL;
+    free_lock_array_local(local_th_data[d->id], num_locks);
+    return NULL;
 }
 
 
@@ -197,7 +192,6 @@ int main(int argc, char **argv)
         {"pause",                     required_argument, NULL, 'p'},
         {"do_writes",                 required_argument, NULL, 'w'},
         {"clines",                    required_argument, NULL, 'c'},
-        {"seed",                      required_argument, NULL, 's'},
         {NULL, 0, NULL, 0}
     };
 
@@ -215,13 +209,12 @@ int main(int argc, char **argv)
     acq_duration = DEFAULT_ACQ_DURATION;
     acq_delay = DEFAULT_ACQ_DELAY;
     cl_access = DEFAULT_CL_ACCESS;
-    seed = DEFAULT_SEED;
 
     sigset_t block_set;
 
     while(1) {
         i = 0;
-        c = getopt_long(argc, argv, "hl:d:n:w:a:p:c:s", long_options, &i);
+        c = getopt_long(argc, argv, "hl:d:n:w:a:p:c:", long_options, &i);
 
         if(c == -1)
             break;
@@ -256,8 +249,6 @@ int main(int argc, char **argv)
                         "        Number of cycles between a lock release and the next acquire (default=" XSTR(DEFAULT_ACQ_DELAY) ")\n"
                         "  -c, --clines <int>\n"
                         "        Number of cache lines written in every critical section (default=" XSTR(DEFAULT_CL_ACCESS) ")\n"
-                        "  -s, --seed <int>\n"
-                        "        RNG seed (0=time-based, default=" XSTR(DEFAULT_SEED) ")\n"
                         );
                 exit(0);
             case 'l':
@@ -290,9 +281,6 @@ int main(int argc, char **argv)
                 break;
             case 'c':
                 cl_access = atoi(optarg);
-                break;
-            case 's':
-                seed = atoi(optarg);
                 break;
             case '?':
                 printf("Use -h or --help for help\n");
@@ -348,11 +336,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if (seed == 0)
-        srand((int)time(NULL));
-    else
-        srand(seed);
-
     local_th_data = (local_data *)malloc(num_threads*sizeof(local_data));
 
     stop = 0;
@@ -372,7 +355,6 @@ int main(int argc, char **argv)
 #endif
         data[i].id = i;
         data[i].num_acquires = 0;
-        data[i].seed = rand();
         data[i].barrier = &barrier;
         if (pthread_create(&threads[i], &attr, test, (void *)(&data[i])) != 0) {
             fprintf(stderr, "Error creating thread\n");
@@ -417,7 +399,7 @@ int main(int argc, char **argv)
 #ifdef PRINT_OUTPUT
     for (i = 0; i < cl_access * num_threads; i++)
     {
-      printf("%d ", protected_data[i].the_data[0]);
+        printf("%d ", protected_data[i].the_data[0]);
     }
     if (cl_access > 0)
     {
@@ -438,7 +420,7 @@ int main(int argc, char **argv)
     printf("Duration      : %d (ms)\n", duration);
 #endif
     printf("#acquires     : %lu ( %lu / s)\n", acquires, (unsigned long )(acquires * 1000.0 / duration));
-    
+
     /* Cleanup locks */
     free_lock_array_global(the_locks, num_locks);
 

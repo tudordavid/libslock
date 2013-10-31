@@ -178,7 +178,6 @@ int main(int argc, char **argv)
         {"pause",                     required_argument, NULL, 'p'},
         {"do_writes",                 required_argument, NULL, 'w'},
         {"clines",                    required_argument, NULL, 'c'},
-        {"seed",                      required_argument, NULL, 's'},
         {NULL, 0, NULL, 0}
     };
 
@@ -201,7 +200,7 @@ int main(int argc, char **argv)
 
     while(1) {
         i = 0;
-        c = getopt_long(argc, argv, "hl:d:n:w:a:p:c:s", long_options, &i);
+        c = getopt_long(argc, argv, "hl:d:n:w:a:p:c:", long_options, &i);
 
         if(c == -1)
             break;
