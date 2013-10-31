@@ -193,7 +193,7 @@ int main(int argc, char **argv)
 
     while(1) {
         i = 0;
-        c = getopt_long(argc, argv, "hl:d:n:a:p:s", long_options, &i);
+        c = getopt_long(argc, argv, "hl:d:n:a:p:", long_options, &i);
 
         if(c == -1)
             break;
