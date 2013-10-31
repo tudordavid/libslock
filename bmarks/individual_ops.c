@@ -30,8 +30,6 @@
 #define DEFAULT_ACQ_DURATION 10
 //the total duration of a test
 #define DEFAULT_DURATION 10000
-//default seed
-#define DEFAULT_SEED 0
 
 static volatile int stop;
 
@@ -54,7 +52,6 @@ int num_locks;
 int num_threads;
 int acq_duration;
 int acq_delay;
-int seed;
 
 ticks correction;
 typedef struct barrier {
@@ -93,7 +90,6 @@ typedef struct thread_data {
     unsigned long num_acquires;
     ticks acquire_time;
     ticks release_time;
-    unsigned int seed;
     int id;
     char padding[CACHE_LINE_SIZE];
 } thread_data_t;
@@ -172,7 +168,6 @@ int main(int argc, char **argv)
         {"num-threads",               required_argument, NULL, 'n'},
         {"acquire",                   required_argument, NULL, 'a'},
         {"pause",                     required_argument, NULL, 'p'},
-        {"seed",                      required_argument, NULL, 's'},
         {NULL, 0, NULL, 0}
     };
 
@@ -190,7 +185,6 @@ int main(int argc, char **argv)
     num_threads = DEFAULT_NUM_THREADS;
     acq_duration = DEFAULT_ACQ_DURATION;
     acq_delay = DEFAULT_ACQ_DELAY;
-    seed = DEFAULT_SEED;
 
     head=1;
     tail=0;
@@ -230,8 +224,6 @@ int main(int argc, char **argv)
                         "        Number of cycles a lock is held (default=" XSTR(DEFAULT_ACQ_DURATION) ")\n"
                         "  -p, --pause <int>\n"
                         "        Number of cycles between a lock release and the next acquire (default=" XSTR(DEFAULT_ACQ_DELAY) ")\n"
-                        "  -s, --seed <int>\n"
-                        "        RNG seed (0=time-based, default=" XSTR(DEFAULT_SEED) ")\n"
                       );
                 exit(0);
             case 'l':
@@ -248,9 +240,6 @@ int main(int argc, char **argv)
                 break;
             case 'p':
                 acq_delay = atoi(optarg);
-                break;
-            case 's':
-                seed = atoi(optarg);
                 break;
             case '?':
                 printf("Use -h or --help for help\n");
@@ -290,11 +279,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if (seed == 0)
-        srand((int)time(NULL));
-    else
-        srand(seed);
-
     local_th_data = (local_data *)malloc(num_threads*sizeof(local_data));
 
     stop = 0;
@@ -316,7 +300,6 @@ int main(int argc, char **argv)
         data[i].num_acquires = 0;
         data[i].acquire_time = 0;
         data[i].release_time = 0;
-        data[i].seed = rand();
         data[i].barrier = &barrier;
         if (pthread_create(&threads[i], &attr, test, (void *)(&data[i])) != 0) {
             fprintf(stderr, "Error creating thread\n");
