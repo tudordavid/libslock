@@ -162,7 +162,7 @@ hclh_local_params** init_hclh_array_local(uint32_t phys_core, uint32_t num_locks
     local_params = (hclh_local_params**)malloc(num_locks * sizeof(hclh_local_params));
     uint32_t i;
 #ifdef XEON
-    __sync_synchronize();
+    MEM_BARRIER;
     uint32_t real_core_num = 0;
     for (i = 0; i < (NUMBER_OF_SOCKETS * CORES_PER_SOCKET); i++) {
         if (the_cores[i]==phys_core) {
@@ -171,7 +171,6 @@ hclh_local_params** init_hclh_array_local(uint32_t phys_core, uint32_t num_locks
         }
     }
     phys_core=real_core_num;
-    __sync_synchronize();
     MEM_BARRIER;
 #endif
     for (i = 0; i < num_locks; i++) {
@@ -185,7 +184,7 @@ hclh_local_params** init_hclh_array_local(uint32_t phys_core, uint32_t num_locks
             the_params[i]->local_queues[phys_core/CORES_PER_SOCKET] = (local_queue*)malloc(sizeof(local_queue));
             *(the_params[i]->local_queues[phys_core/CORES_PER_SOCKET]) = NULL;
 #ifdef __tile__
-            __sync_synchronize();
+        MEM_BARRIER;
 #endif
             the_params[i]->init_done[phys_core/CORES_PER_SOCKET]=INIT_VAL;
         }
@@ -232,7 +231,7 @@ hclh_local_params* init_hclh_local(uint32_t phys_core, hclh_global_params* the_p
     set_cpu(phys_core);
     hclh_local_params* local_params;
 #ifdef XEON
-    __sync_synchronize();
+    MEM_BARRIER;
     uint32_t real_core_num = 0;
     int i;
     for (i = 0; i < (NUMBER_OF_SOCKETS * CORES_PER_SOCKET); i++) {
@@ -242,7 +241,6 @@ hclh_local_params* init_hclh_local(uint32_t phys_core, hclh_global_params* the_p
         }
     }
     phys_core=real_core_num;
-    __sync_synchronize();
     MEM_BARRIER;
 #endif
     local_params=(hclh_local_params*) malloc(sizeof(hclh_local_params));
@@ -255,7 +253,7 @@ hclh_local_params* init_hclh_local(uint32_t phys_core, hclh_global_params* the_p
         the_params->local_queues[phys_core/CORES_PER_SOCKET] = (local_queue*)malloc(sizeof(local_queue));
         *(the_params->local_queues[phys_core/CORES_PER_SOCKET]) = NULL;
 #ifdef __tile__
-        __sync_synchronize();
+        MEM_BARRIER;
 #endif
         the_params->init_done[phys_core/CORES_PER_SOCKET]=INIT_VAL;
     }
