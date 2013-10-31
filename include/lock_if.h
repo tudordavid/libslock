@@ -58,13 +58,13 @@
 #ifdef USE_MCS_LOCKS
 typedef mcs_global_params lock_global_data;
 #elif defined(USE_HCLH_LOCKS)
-typedef hclh_global_params* lock_global_data;
+typedef hclh_global_params lock_global_data;
 #elif defined(USE_TTAS_LOCKS)
 typedef ttas_lock_t  lock_global_data;
 #elif defined(USE_SPINLOCK_LOCKS)
 typedef spinlock_lock_t lock_global_data;
 #elif defined(USE_ARRAY_LOCKS)
-typedef lock_shared_t* lock_global_data;
+typedef lock_shared_t lock_global_data;
 #elif defined(USE_CLH_LOCKS)
 typedef clh_global_params lock_global_data;
 #elif defined(USE_RW_LOCKS)
@@ -82,15 +82,15 @@ typedef lock_global_data* global_data;
 
 //typedefs for thread local data
 #ifdef USE_MCS_LOCKS
-typedef mcs_qnode* lock_local_data;
+typedef mcs_local_params lock_local_data;
 #elif defined(USE_HCLH_LOCKS)
-typedef hclh_local_params* lock_local_data;
+typedef hclh_local_params lock_local_data;
 #elif defined(USE_TTAS_LOCKS)
 typedef unsigned int lock_local_data;
 #elif defined(USE_SPINLOCK_LOCKS)
 typedef unsigned int lock_local_data;
 #elif defined(USE_ARRAY_LOCKS)
-typedef array_lock_t* lock_local_data;
+typedef array_lock_t lock_local_data;
 #elif defined(USE_CLH_LOCKS)
 typedef clh_local_params lock_local_data;
 #elif defined(USE_RW_LOCKS)
@@ -118,8 +118,8 @@ static inline void acquire_read(lock_local_data* local_d, lock_global_data* glob
 //acquisition of write lock; in case of non-rw lock, just implements exlusive access
 static inline void acquire_write(lock_local_data* local_d, lock_global_data* global_d);
 
-//non-atomic trylock: if (is_free(lock)) acquire; needed for memcached
-static inline int na_trylock(lock_local_data* local_d, lock_global_data* global_d);
+//trylock
+static inline int acquire_trylock(lock_local_data* local_d, lock_global_data* global_d);
 
 //lock release operation
 //cluster_id is the cluster number of the core requesting the operation;
@@ -147,10 +147,10 @@ static inline void free_lock_array_global(global_data the_locks, int num_locks);
 static inline void free_lock_array_local(local_data local_d, int num_locks);
 
 //initialization of local data for a lock; core_to_pin is the core on which the thread is execting, 
-static inline lock_local_data init_lock_local(int core_to_pin, lock_global_data the_locks);
+static inline int init_lock_local(int core_to_pin, lock_global_data* the_locks, lock_local_data *the_data);
 
 //initialization of global data for a lock
-static inline lock_global_data init_lock_global(int num_threads);
+static inline int init_lock_global(lock_global_data* the_locks);
 
 //removal of global data for a lock
 static inline void free_lock_global(lock_global_data the_lock);
@@ -166,13 +166,13 @@ static inline void acquire_lock(lock_local_data* local_d, lock_global_data* glob
 #ifdef USE_MCS_LOCKS
     mcs_acquire(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    (*local_d)->my_pred= (qnode*) hclh_acquire((*local_d)->my_queue,(*global_d)->shared_queue,(*local_d)->my_qnode);
+    local_d->my_pred= (qnode*) hclh_acquire(local_d->my_queue,global_d->shared_queue,local_d->my_qnode);
 #elif defined(USE_TTAS_LOCKS)
     ttas_lock(global_d, local_d);
 #elif defined(USE_SPINLOCK_LOCKS)
     spinlock_lock(global_d, local_d);
 #elif defined(USE_ARRAY_LOCKS)
-    alock_lock(*local_d);
+    alock_lock(local_d);
 #elif defined(USE_CLH_LOCKS)
     local_d->my_pred= (clh_qnode*) clh_acquire(global_d->the_lock, local_d->my_qnode);
 #elif defined(USE_RW_LOCKS)
@@ -189,13 +189,13 @@ static inline void acquire_write(lock_local_data* local_d, lock_global_data* glo
 #ifdef USE_MCS_LOCKS
     mcs_acquire(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    (*local_d)->my_pred= (qnode*) hclh_acquire((*local_d)->my_queue,(*global_d)->shared_queue,(*local_d)->my_qnode);
+    local_d->my_pred= (qnode*) hclh_acquire(local_d->my_queue,global_d->shared_queue,local_d->my_qnode);
 #elif defined(USE_TTAS_LOCKS)
     ttas_lock(global_d, local_d);
 #elif defined(USE_SPINLOCK_LOCKS)
     spinlock_lock(global_d, local_d);
 #elif defined(USE_ARRAY_LOCKS)
-    alock_lock(*local_d);
+    alock_lock(local_d);
 #elif defined(USE_CLH_LOCKS)
     local_d->my_pred= (clh_qnode*) clh_acquire(global_d->the_lock, local_d->my_qnode);
 #elif defined(USE_RW_LOCKS)
@@ -213,13 +213,13 @@ static inline void acquire_read(lock_local_data* local_d, lock_global_data* glob
 #ifdef USE_MCS_LOCKS
     mcs_acquire(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    (*local_d)->my_pred= (qnode*) hclh_acquire((*local_d)->my_queue,(*global_d)->shared_queue,(*local_d)->my_qnode);
+    local_d->my_pred= (qnode*) hclh_acquire(local_d->my_queue,global_d->shared_queue,local_d->my_qnode);
 #elif defined(USE_TTAS_LOCKS)
     ttas_lock(global_d, local_d);
 #elif defined(USE_SPINLOCK_LOCKS)
     spinlock_lock(global_d, local_d);
 #elif defined(USE_ARRAY_LOCKS)
-    alock_lock(*local_d);
+    alock_lock(local_d);
 #elif defined(USE_CLH_LOCKS)
     local_d->my_pred= (clh_qnode*) clh_acquire(global_d->the_lock, local_d->my_qnode);
 #elif defined(USE_RW_LOCKS)
@@ -238,13 +238,13 @@ static inline void release_lock(int cluster_id, lock_local_data *local_d, lock_g
 #ifdef USE_MCS_LOCKS
     mcs_release(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    (*local_d)->my_qnode=hclh_release((*local_d)->my_qnode,(*local_d)->my_pred,cluster_id);
+    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred,cluster_id);
 #elif defined(USE_TTAS_LOCKS)
     ttas_unlock(global_d);
 #elif defined(USE_SPINLOCK_LOCKS)
     spinlock_unlock(global_d);
 #elif defined(USE_ARRAY_LOCKS)
-    alock_unlock(*local_d);
+    alock_unlock(local_d);
 #elif defined(USE_CLH_LOCKS)
     local_d->my_qnode=clh_release(local_d->my_qnode, local_d->my_pred);
 #elif defined(USE_RW_LOCKS)
@@ -263,13 +263,13 @@ static inline void release_write(int cluster_id, lock_local_data *local_d, lock_
 #ifdef USE_MCS_LOCKS
     mcs_release(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    (*local_d)->my_qnode=hclh_release((*local_d)->my_qnode,(*local_d)->my_pred,cluster_id);
+    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred,cluster_id);
 #elif defined(USE_TTAS_LOCKS)
     ttas_unlock(global_d);
 #elif defined(USE_SPINLOCK_LOCKS)
     spinlock_unlock(global_d);
 #elif defined(USE_ARRAY_LOCKS)
-    alock_unlock(*local_d);
+    alock_unlock(local_d);
 #elif defined(USE_CLH_LOCKS)
     local_d->my_qnode=clh_release(local_d->my_qnode, local_d->my_pred);
 #elif defined(USE_RW_LOCKS)
@@ -288,13 +288,13 @@ static inline void release_read(int cluster_id, lock_local_data *local_d, lock_g
 #ifdef USE_MCS_LOCKS
     mcs_release(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    (*local_d)->my_qnode=hclh_release((*local_d)->my_qnode,(*local_d)->my_pred,cluster_id);
+    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred,cluster_id);
 #elif defined(USE_TTAS_LOCKS)
     ttas_unlock(global_d);
 #elif defined(USE_SPINLOCK_LOCKS)
     spinlock_unlock(global_d);
 #elif defined(USE_ARRAY_LOCKS)
-    alock_unlock(*local_d);
+    alock_unlock(local_d);
 #elif defined(USE_CLH_LOCKS)
     local_d->my_qnode=clh_release(local_d->my_qnode, local_d->my_pred);
 #elif defined(USE_RW_LOCKS)
@@ -339,31 +339,31 @@ static inline local_data init_lock_array_local(int core_to_pin, int num_locks, g
 #endif
 }
 
-static inline lock_local_data init_lock_local(int core_to_pin,  lock_global_data the_lock){
+static inline int init_lock_local(int core_to_pin,  lock_global_data* the_lock, lock_local_data* local_data){
 #ifdef USE_MCS_LOCKS
-    return init_mcs_local(core_to_pin);
+    return init_mcs_local(core_to_pin, local_data);
 #elif defined(USE_HCLH_LOCKS)
-    return init_hclh_local(core_to_pin, the_lock);
+    return init_hclh_local(core_to_pin, the_lock, local_data);
 #elif defined(USE_TTAS_LOCKS)
-    return init_ttas_local(core_to_pin);
+    return  init_ttas_local(core_to_pin, local_data);
 #elif defined(USE_SPINLOCK_LOCKS)
-    return init_spinlock_local(core_to_pin);
+    return init_spinlock_local(core_to_pin, local_data);
 #elif defined(USE_ARRAY_LOCKS)
-    return init_alock_local(core_to_pin, the_lock);
+    return init_alock_local(core_to_pin, the_lock, local_data);
 #elif defined(USE_RW_LOCKS)
-    return init_rw_ttas_local(core_to_pin);
+    return init_rw_ttas_local(core_to_pin, local_data);
 #elif defined(USE_CLH_LOCKS)
-    return init_clh_local(core_to_pin);
+    return init_clh_local(core_to_pin, local_data);
 #elif defined(USE_TICKET_LOCKS)
     init_thread_ticketlocks(core_to_pin);
-    return NULL;
+    return 0;
 #elif defined(USE_MUTEX_LOCKS)
     //assign the thread to the correct core
     set_cpu(core_to_pin);
-    return NULL;
+    return 0;
 #elif defined(USE_HTICKET_LOCKS)
     init_thread_htlocks(core_to_pin);
-    return NULL;
+    return 0;
 #endif
 }
 
@@ -377,7 +377,7 @@ static inline void free_lock_local(lock_local_data local_d){
 #elif defined(USE_SPINLOCK_LOCKS)
     //    end_spinlock_array_local(local_d);
 #elif defined(USE_ARRAY_LOCKS)
-    end_alock_local(local_d);
+   // end_alock_local(local_d);
 #elif defined(USE_CLH_LOCKS)
     end_clh_local(local_d);
 #elif defined(USE_RW_LOCKS)
@@ -445,32 +445,38 @@ static inline global_data init_lock_array_global(int num_locks, int num_threads)
 #endif
 }
 
-static inline lock_global_data init_lock_global(int num_threads){
+static inline int init_lock_global(lock_global_data* the_lock){
 #ifdef USE_MCS_LOCKS
-    return init_mcs_global();
+    return init_mcs_global(the_lock);
 #elif defined(USE_HCLH_LOCKS)
-    return init_hclh_global();
+    return init_hclh_global(the_lock);
 #elif defined(USE_TTAS_LOCKS)
-    return init_ttas_global();
+    return init_ttas_global(the_lock);
 #elif defined(USE_SPINLOCK_LOCKS)
-    return init_spinlock_global();
+    return init_spinlock_global(the_lock);
 #elif defined(USE_ARRAY_LOCKS)
-    return init_alock_global(num_threads);
+    perror("operation not suported for array locks; use init_lock_global_nt instead");
+    return 1;
 #elif defined(USE_RW_LOCKS)
-    return init_rw_ttas_global();
+    return init_rw_ttas_global(the_lock);
 #elif defined(USE_TICKET_LOCKS)
-    return create_ticketlock();
+    return create_ticketlock(the_lock);
 #elif defined(USE_CLH_LOCKS)
-    return init_clh_global();
+    return init_clh_global(the_lock);
 #elif defined(USE_MUTEX_LOCKS)
-    pthread_mutex_t*  the_lock;
-    the_lock = (pthread_mutex_t*) malloc(sizeof(pthread_mutex_t));
     pthread_mutex_init(the_lock, NULL);
-    return (*the_lock);
+    return 0;
 #elif defined(USE_HTICKET_LOCKS)
-    htlock_t* lh = create_htlock();
-    return (*lh);
+    return create_htlock(the_lock);
 #endif
+}
+
+static inline int init_lock_global_nt(int num_threads, lock_global_data* the_lock) {
+    #ifdef USE_ARRAY_LOCKS
+        return init_alock_global(num_threads, the_lock);
+    #else 
+        return init_lock_global(the_lock);
+    #endif
 }
 
 static inline void free_lock_array_global(global_data the_locks, int num_locks) {
@@ -510,7 +516,7 @@ static inline void free_lock_global(lock_global_data the_lock) {
 #elif defined(USE_SPINLOCK_LOCKS)
     end_spinlock_global(the_lock);
 #elif defined(USE_ARRAY_LOCKS)
-    end_alock_global(the_lock);
+    //end_alock_global(the_lock);
 #elif defined(USE_RW_LOCKS)
     end_rw_ttas_global(the_lock);
 #elif defined(USE_CLH_LOCKS)
@@ -528,22 +534,23 @@ static inline void free_lock_global(lock_global_data the_lock) {
 //checks whether the lock is free; if it is, acquire it;
 //we use this in memcached to simulate trylocks
 //return 0 on success, 1 otherwise
-static inline int na_trylock( lock_local_data* local_d, lock_global_data* global_d) {
+static inline int acquire_trylock( lock_local_data* local_d, lock_global_data* global_d) {
 #ifdef USE_MCS_LOCKS
     return mcs_trylock(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    lock_local_data ld = *local_d;
-    if (is_free_hclh(ld->my_queue,(*global_d)->shared_queue,ld->my_qnode)) {
-        (*local_d)->my_pred= (qnode*) hclh_acquire(ld->my_queue,(*global_d)->shared_queue,ld->my_qnode);
-        return 0;
-    }
+    perror("trylock not supported for hclh locks");
+//    lock_local_data ld = *local_d;
+//    if (is_free_hclh(ld->my_queue,(*global_d)->shared_queue,ld->my_qnode)) {
+//        (*local_d)->my_pred= (qnode*) hclh_acquire(ld->my_queue,(*global_d)->shared_queue,ld->my_qnode);
+//        return 0;
+//    }
     return 1;
 #elif defined(USE_TTAS_LOCKS)
     return ttas_trylock(global_d, local_d);
 #elif defined(USE_SPINLOCK_LOCKS)
     return spinlock_trylock(global_d, local_d);
 #elif defined(USE_ARRAY_LOCKS)
-    return alock_trylock(*local_d);
+    return alock_trylock(local_d);
 #elif defined(USE_RW_LOCKS)
     return rw_trylock(global_d,local_d);
 #elif defined(USE_TICKET_LOCKS)
@@ -561,13 +568,13 @@ static inline void release_trylock(int cluster_id, lock_local_data* local_d, loc
 #ifdef USE_MCS_LOCKS
     mcs_release(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    (*local_d)->my_qnode=hclh_release((*local_d)->my_qnode,(*local_d)->my_pred,cluster_id);
+    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred,cluster_id);
 #elif defined(USE_TTAS_LOCKS)
     ttas_unlock(global_d);
 #elif defined(USE_SPINLOCK_LOCKS)
     spinlock_unlock(global_d);
 #elif defined(USE_ARRAY_LOCKS)
-    alock_unlock(*local_d);
+    alock_unlock(local_d);
 #elif defined(USE_RW_LOCKS)
     write_release(global_d); 
 #elif defined(USE_TICKET_LOCKS)

@@ -239,7 +239,7 @@ void *test(void *data)
     //#endif
 
     /* local initialization of locks */
-    local_th_data[d->id] = init_lock_local(phys_id, the_lock);
+    init_lock_local(phys_id, &the_lock, &(local_th_data[d->id]));
 
     /* Wait on barrier */
     barrier_cross(d->barrier);
@@ -490,7 +490,7 @@ int main(int argc, char **argv)
 #ifdef PRINT_OUTPUT
     printf("Initializing locks\n");
 #endif
-    the_lock = init_lock_global(nb_threads);
+    init_lock_global_nt(nb_threads,&the_lock);
 
     /* Access set from all threads */
     barrier_init(&barrier, nb_threads + 1);

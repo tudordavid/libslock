@@ -126,15 +126,15 @@ void *test_correctness(void *data)
     phys_id = the_cores[d->id];
     cluster_id = get_cluster(phys_id);
 
-    local_th_data[d->id] = init_lock_local(phys_id, the_lock);
+    init_lock_local(phys_id, &the_lock, &(local_th_data[d->id]));
 
     barrier_cross(d->barrier);
 
-    lock_local_data local_d = local_th_data[d->id];
+    lock_local_data* local_d = &(local_th_data[d->id]);
     while (stop == 0) {
-        acquire_lock(&local_d,&the_lock);
+        acquire_lock(local_d,&the_lock);
         protected_data->counter++;
-        release_lock(cluster_id,&local_d,&the_lock);
+        release_lock(cluster_id,local_d,&the_lock);
         d->num_acquires++;
     }
 
@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 #ifdef PRINT_OUTPUT
     printf("Initializing locks\n");
 #endif
-    the_lock = init_lock_global(num_threads);
+    init_lock_global_nt(num_threads,&the_lock);
 
     /* Access set from all threads */
     barrier_init(&barrier, num_threads + 1);

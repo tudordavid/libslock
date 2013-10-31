@@ -38,22 +38,21 @@
 
 __thread uint32_t htlock_node_mine, htlock_id_mine;
 
-    htlock_t* 
-create_htlock()
+int create_htlock(htlock_t* htl)
 {
-    htlock_t* htl;
-    htl = memalign(CACHE_LINE_SIZE, sizeof(htlock_t));
-    if (htl == NULL) 
-    {
-        fprintf(stderr,"Error @ memalign : create htlock\n");
-    }
+//    htlock_t* htl;
+//    htl = memalign(CACHE_LINE_SIZE, sizeof(htlock_t));
+//    if (htl == NULL) 
+//    {
+//        fprintf(stderr,"Error @ memalign : create htlock\n");
+//    }
     assert(htl != NULL);
 
     htl->global = memalign(CACHE_LINE_SIZE, sizeof(htlock_global_t));
     if (htl == NULL) 
     {
         fprintf(stderr,"Error @ memalign : create htlock\n");
-    }
+     }
     assert(htl->global != NULL);
 
     uint32_t s;
@@ -78,7 +77,7 @@ create_htlock()
     htl->global->nxt = 0;
 
     MEM_BARRIER;
-    return htl;
+    return 0;
 }
 
 

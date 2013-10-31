@@ -96,9 +96,9 @@ void end_spinlock_array_global(spinlock_lock_t* the_locks);
  *  Methods for single lock manipulation
  */
 
-spinlock_lock_t init_spinlock_global();
+int init_spinlock_global(spinlock_lock_t* the_lock);
 
-uint32_t init_spinlock_local(uint32_t thread_num);
+int init_spinlock_local(uint32_t thread_num, uint32_t* limit);
 
 void end_spinlock_local();
 

@@ -106,9 +106,9 @@ void end_ttas_array_global(ttas_lock_t* the_locks);
  *  Single lock initialization and destruction
  */
 
-ttas_lock_t init_ttas_global();
+int init_ttas_global(ttas_lock_t* the_lock);
 
-uint32_t init_ttas_local(uint32_t thread_num);
+int  init_ttas_local(uint32_t thread_num, uint32_t* limit);
 
 void end_ttas_local();
 

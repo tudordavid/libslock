@@ -136,30 +136,30 @@ qnode* hclh_release(qnode *my_qnode, qnode * my_pred, uint8_t th_cluster) {
 
 #define INIT_VAL 123
 
-hclh_global_params** init_hclh_array_global(uint32_t num_locks) {
-    hclh_global_params** the_params;
-    the_params = (hclh_global_params**)malloc(num_locks * sizeof(hclh_global_params*));
+hclh_global_params* init_hclh_array_global(uint32_t num_locks) {
+    hclh_global_params* the_params;
+    the_params = (hclh_global_params*)malloc(num_locks * sizeof(hclh_global_params));
     uint32_t i;
     for (i=0;i<num_locks;i++) {
-        the_params[i]=(hclh_global_params*)malloc(sizeof(hclh_global_params));
-        the_params[i]->local_queues = (local_queue**)malloc(NUMBER_OF_SOCKETS*sizeof(local_queue*));
-        the_params[i]->init_done=(uint32_t*)malloc(NUMBER_OF_SOCKETS * sizeof(uint32_t));
-        the_params[i]->shared_queue = (global_queue*)malloc(sizeof(global_queue));
+        //the_params[i]=(hclh_global_params*)malloc(sizeof(hclh_global_params));
+        the_params[i].local_queues = (local_queue**)malloc(NUMBER_OF_SOCKETS*sizeof(local_queue*));
+        the_params[i].init_done=(uint32_t*)malloc(NUMBER_OF_SOCKETS * sizeof(uint32_t));
+        the_params[i].shared_queue = (global_queue*)malloc(sizeof(global_queue));
         qnode * a_node = (qnode *) malloc(sizeof(qnode));
         a_node->data=0;
         a_node->fields.cluster_id = NUMBER_OF_SOCKETS+1;
-        *(the_params[i]->shared_queue) = a_node;
+        *(the_params[i].shared_queue) = a_node;
     }
     MEM_BARRIER;
     return the_params;
 }
 
 
-hclh_local_params** init_hclh_array_local(uint32_t phys_core, uint32_t num_locks, hclh_global_params** the_params) {
+hclh_local_params* init_hclh_array_local(uint32_t phys_core, uint32_t num_locks, hclh_global_params* the_params) {
     //assign the thread to the correct core
     set_cpu(phys_core);
-    hclh_local_params** local_params;
-    local_params = (hclh_local_params**)malloc(num_locks * sizeof(hclh_local_params));
+    hclh_local_params* local_params;
+    local_params = (hclh_local_params*)malloc(num_locks * sizeof(hclh_local_params));
     uint32_t i;
 #ifdef XEON
     MEM_BARRIER;
@@ -174,46 +174,47 @@ hclh_local_params** init_hclh_array_local(uint32_t phys_core, uint32_t num_locks
     MEM_BARRIER;
 #endif
     for (i = 0; i < num_locks; i++) {
-        local_params[i]=(hclh_local_params*) malloc(sizeof(hclh_local_params));
-        local_params[i]->my_qnode = (qnode*) malloc(sizeof(qnode));
-        local_params[i]->my_qnode->data = 0;
-        local_params[i]->my_qnode->fields.cluster_id  = phys_core/CORES_PER_SOCKET;
-        local_params[i]->my_qnode->fields.successor_must_wait=1;
-        local_params[i]->my_pred = NULL;
+        //local_params[i]=(hclh_local_params*) malloc(sizeof(hclh_local_params));
+        local_params[i].my_qnode = (qnode*) malloc(sizeof(qnode));
+        local_params[i].my_qnode->data = 0;
+        local_params[i].my_qnode->fields.cluster_id  = phys_core/CORES_PER_SOCKET;
+        local_params[i].my_qnode->fields.successor_must_wait=1;
+        local_params[i].my_pred = NULL;
         if (phys_core%CORES_PER_SOCKET==0) {
-            the_params[i]->local_queues[phys_core/CORES_PER_SOCKET] = (local_queue*)malloc(sizeof(local_queue));
-            *(the_params[i]->local_queues[phys_core/CORES_PER_SOCKET]) = NULL;
+            the_params[i].local_queues[phys_core/CORES_PER_SOCKET] = (local_queue*)malloc(sizeof(local_queue));
+            *(the_params[i].local_queues[phys_core/CORES_PER_SOCKET]) = NULL;
 #ifdef __tile__
         MEM_BARRIER;
 #endif
-            the_params[i]->init_done[phys_core/CORES_PER_SOCKET]=INIT_VAL;
+            the_params[i].init_done[phys_core/CORES_PER_SOCKET]=INIT_VAL;
         }
-        while(the_params[i]->init_done[phys_core/CORES_PER_SOCKET]!=INIT_VAL) {}
-        local_params[i]->my_queue = the_params[i]->local_queues[phys_core/CORES_PER_SOCKET];
+        while(the_params[i].init_done[phys_core/CORES_PER_SOCKET]!=INIT_VAL) {}
+        local_params[i].my_queue = the_params[i].local_queues[phys_core/CORES_PER_SOCKET];
     }
     MEM_BARRIER;
     return local_params;
 }
 
-void end_hclh_array_local(hclh_local_params** local_params, uint32_t size) {
+void end_hclh_array_local(hclh_local_params* local_params, uint32_t size) {
     uint32_t i;
     for (i = 0; i < size; i++) {
-        free(local_params[i]);
+        free(local_params[i].my_qnode);
     }
     free(local_params);
 }
 
-void end_hclh_array_global(hclh_global_params** global_params, uint32_t size) {
+void end_hclh_array_global(hclh_global_params* global_params, uint32_t size) {
     uint32_t i;
     for (i = 0; i < size; i++) {
-        free(global_params[i]);
+        free(global_params[i].shared_queue);
+        free(global_params[i].local_queues);
     }
     free(global_params); 
 }
 
-hclh_global_params* init_hclh_global() {
-    hclh_global_params* the_params;
-    the_params=(hclh_global_params*)malloc(sizeof(hclh_global_params));
+int init_hclh_global(hclh_global_params* the_params) {
+   // hclh_global_params* the_params;
+   // the_params=(hclh_global_params*)malloc(sizeof(hclh_global_params));
     the_params->local_queues = (local_queue**)malloc(NUMBER_OF_SOCKETS*sizeof(local_queue*));
     the_params->init_done=(uint32_t*)malloc(NUMBER_OF_SOCKETS * sizeof(uint32_t));
     the_params->shared_queue = (global_queue*)malloc(sizeof(global_queue));
@@ -222,14 +223,13 @@ hclh_global_params* init_hclh_global() {
     a_node->fields.cluster_id = NUMBER_OF_SOCKETS+1;
     *(the_params->shared_queue) = a_node;
     MEM_BARRIER;
-    return the_params;
+    return 0;
 }
 
 
-hclh_local_params* init_hclh_local(uint32_t phys_core, hclh_global_params* the_params) {
+int init_hclh_local(uint32_t phys_core, hclh_global_params* the_params, hclh_local_params* local_params) {
     //assign the thread to the correct core
     set_cpu(phys_core);
-    hclh_local_params* local_params;
 #ifdef XEON
     MEM_BARRIER;
     uint32_t real_core_num = 0;
@@ -243,7 +243,7 @@ hclh_local_params* init_hclh_local(uint32_t phys_core, hclh_global_params* the_p
     phys_core=real_core_num;
     MEM_BARRIER;
 #endif
-    local_params=(hclh_local_params*) malloc(sizeof(hclh_local_params));
+//    local_params=(hclh_local_params*) malloc(sizeof(hclh_local_params));
     local_params->my_qnode = (qnode*) malloc(sizeof(qnode));
     local_params->my_qnode->data = 0;
     local_params->my_qnode->fields.cluster_id  = phys_core/CORES_PER_SOCKET;
@@ -260,14 +260,19 @@ hclh_local_params* init_hclh_local(uint32_t phys_core, hclh_global_params* the_p
     while(the_params->init_done[phys_core/CORES_PER_SOCKET]!=INIT_VAL) {}
     local_params->my_queue = the_params->local_queues[phys_core/CORES_PER_SOCKET];
     MEM_BARRIER;
-    return local_params;
+    return 0;
 }
 
-void end_hclh_local(hclh_local_params* local_params) {
-    free(local_params);
+void end_hclh_local(hclh_local_params local_params) {
+    free(local_params.my_qnode);
 }
 
-void end_hclh_global(hclh_global_params* global_params) {
-    free(global_params); 
+void end_hclh_global(hclh_global_params global_params) {
+    free(global_params.shared_queue);
+    int i;
+    for (i=0;i<sizeof(global_params.local_queues)/sizeof(global_params.local_queues[0]);i++) {
+       free(global_params.local_queues[i]); 
+    }
+    free(global_params.local_queues);
 }
 

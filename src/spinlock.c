@@ -110,21 +110,21 @@ void end_spinlock_array_global(spinlock_lock_t* the_locks)
     free(the_locks);
 }
 
-spinlock_lock_t init_spinlock_global() 
+int init_spinlock_global(spinlock_lock_t* the_lock) 
 {
-    spinlock_lock_t the_lock;
-    the_lock.lock = UNLOCKED;
+    the_lock->lock = UNLOCKED;
     MEM_BARRIER;
-    return the_lock;
+    return 0;
 }
 
-uint32_t init_spinlock_local(uint32_t thread_num)
+int init_spinlock_local(uint32_t thread_num, uint32_t* limit)
 {
     //assign the thread to the correct core
     set_cpu(thread_num);
+    *limit = 1;
     spinlock_seeds = seed_rand();
     MEM_BARRIER;
-    return 1;
+    return 0;
 }
 
 void end_spinlock_local() 
