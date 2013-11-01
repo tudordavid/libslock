@@ -556,11 +556,13 @@ static inline int acquire_trylock( lock_local_data* local_d, lock_global_data* g
 #elif defined(USE_TICKET_LOCKS)
     return ticket_trylock(global_d);
 #elif defined(USE_CLH_LOCKS)
-    return clh_trylock(global_d->the_lock,local_d->my_qnode);
+    perror("trylock not supported for clh locks");
+//    return clh_trylock(global_d->the_lock,local_d->my_qnode);
 #elif defined(USE_MUTEX_LOCKS)
     return pthread_mutex_trylock(global_d);
 #elif defined(USE_HTICKET_LOCKS)
-    return htlock_trylock(global_d);
+    if (htlock_trylock(global_d)) return 0;
+    return 1;
 #endif
 }
 
