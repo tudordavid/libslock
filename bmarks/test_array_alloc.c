@@ -139,7 +139,7 @@ void *test_correctness(void *data)
         //just picked a random lock to acquire
         acquire_lock(&local_d[5],&the_locks[5]);
         protected_data->counter++;
-        release_lock(cluster_id,&local_d[5],&the_locks[5]);
+        release_lock(&local_d[5],&the_locks[5]);
         d->num_acquires++;
     }
 

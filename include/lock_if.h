@@ -124,15 +124,15 @@ static inline int acquire_trylock(lock_local_data* local_d, lock_global_data* gl
 //lock release operation
 //cluster_id is the cluster number of the core requesting the operation;
 //e.g. the socket in the case of the Opteron
-static inline void release_lock(int cluster_id, lock_local_data* local_d, lock_global_data* global_d);
+static inline void release_lock(lock_local_data* local_d, lock_global_data* global_d);
 
-static inline void release_trylock(int cluster_id, lock_local_data* local_d, lock_global_data* global_d);
+static inline void release_trylock(lock_local_data* local_d, lock_global_data* global_d);
 
 //release reader lock
-static inline void release_read(int cluster_id, lock_local_data* local_d, lock_global_data* global_d);
+static inline void release_read(lock_local_data* local_d, lock_global_data* global_d);
 
 //release writer lock
-static inline void release_write(int cluster_id, lock_local_data* local_d, lock_global_data* global_d);
+static inline void release_write(lock_local_data* local_d, lock_global_data* global_d);
 
 //initialization of local data for an array of locks; core_to_pin is the core on which the thread is execting, 
 static inline local_data init_lock_array_local(int core_to_pin, int num_locks, global_data the_locks);
@@ -234,11 +234,11 @@ static inline void acquire_read(lock_local_data* local_d, lock_global_data* glob
 }
 
 
-static inline void release_lock(int cluster_id, lock_local_data *local_d, lock_global_data *global_d) {
+static inline void release_lock(lock_local_data *local_d, lock_global_data *global_d) {
 #ifdef USE_MCS_LOCKS
     mcs_release(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred,cluster_id);
+    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred);
 #elif defined(USE_TTAS_LOCKS)
     ttas_unlock(global_d);
 #elif defined(USE_SPINLOCK_LOCKS)
@@ -259,11 +259,11 @@ static inline void release_lock(int cluster_id, lock_local_data *local_d, lock_g
 
 }
 
-static inline void release_write(int cluster_id, lock_local_data *local_d, lock_global_data *global_d) {
+static inline void release_write(lock_local_data *local_d, lock_global_data *global_d) {
 #ifdef USE_MCS_LOCKS
     mcs_release(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred,cluster_id);
+    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred);
 #elif defined(USE_TTAS_LOCKS)
     ttas_unlock(global_d);
 #elif defined(USE_SPINLOCK_LOCKS)
@@ -284,11 +284,11 @@ static inline void release_write(int cluster_id, lock_local_data *local_d, lock_
 
 }
 
-static inline void release_read(int cluster_id, lock_local_data *local_d, lock_global_data *global_d) {
+static inline void release_read(lock_local_data *local_d, lock_global_data *global_d) {
 #ifdef USE_MCS_LOCKS
     mcs_release(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred,cluster_id);
+    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred);
 #elif defined(USE_TTAS_LOCKS)
     ttas_unlock(global_d);
 #elif defined(USE_SPINLOCK_LOCKS)
@@ -558,6 +558,7 @@ static inline int acquire_trylock( lock_local_data* local_d, lock_global_data* g
 #elif defined(USE_CLH_LOCKS)
     perror("trylock not supported for clh locks");
 //    return clh_trylock(global_d->the_lock,local_d->my_qnode);
+    return 1;
 #elif defined(USE_MUTEX_LOCKS)
     return pthread_mutex_trylock(global_d);
 #elif defined(USE_HTICKET_LOCKS)
@@ -566,11 +567,11 @@ static inline int acquire_trylock( lock_local_data* local_d, lock_global_data* g
 #endif
 }
 
-static inline void release_trylock(int cluster_id, lock_local_data* local_d, lock_global_data* global_d) {
+static inline void release_trylock(lock_local_data* local_d, lock_global_data* global_d) {
 #ifdef USE_MCS_LOCKS
     mcs_release(global_d->the_lock,*local_d);
 #elif defined(USE_HCLH_LOCKS)
-    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred,cluster_id);
+    local_d->my_qnode=hclh_release(local_d->my_qnode,local_d->my_pred);
 #elif defined(USE_TTAS_LOCKS)
     ttas_unlock(global_d);
 #elif defined(USE_SPINLOCK_LOCKS)

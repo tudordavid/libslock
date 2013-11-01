@@ -29,6 +29,8 @@
 
 #include "hclh.h"
 
+__thread uint32_t hclh_node_mine;
+
 uint16_t wait_for_grant_or_cluster_master(volatile qnode *q, uint8_t my_cluster) {
     qnode aux;
     while(1) 
@@ -105,12 +107,12 @@ int is_free_hclh(local_queue *lq, global_queue *gq, qnode *my_qnode) {
     return 0;
 }
 
-qnode* hclh_release(qnode *my_qnode, qnode * my_pred, uint8_t th_cluster) {
+qnode* hclh_release(qnode *my_qnode, qnode * my_pred) {
     my_qnode->fields.successor_must_wait = 0;
     qnode* pr = my_pred;
     qnode new_node;
     new_node.data=0;
-    new_node.fields.cluster_id=th_cluster;
+    new_node.fields.cluster_id=hclh_node_mine;
     new_node.fields.successor_must_wait = 1;
     new_node.fields.tail_when_spliced=0;
 
@@ -173,6 +175,7 @@ hclh_local_params* init_hclh_array_local(uint32_t phys_core, uint32_t num_locks,
     phys_core=real_core_num;
     MEM_BARRIER;
 #endif
+    hclh_node_mine = phys_core/CORES_PER_SOCKET;
     for (i = 0; i < num_locks; i++) {
         //local_params[i]=(hclh_local_params*) malloc(sizeof(hclh_local_params));
         local_params[i].my_qnode = (qnode*) malloc(sizeof(qnode));
@@ -243,6 +246,8 @@ int init_hclh_local(uint32_t phys_core, hclh_global_params* the_params, hclh_loc
     phys_core=real_core_num;
     MEM_BARRIER;
 #endif
+
+    hclh_node_mine = phys_core/CORES_PER_SOCKET;
 //    local_params=(hclh_local_params*) malloc(sizeof(hclh_local_params));
     local_params->my_qnode = (qnode*) malloc(sizeof(qnode));
     local_params->my_qnode->data = 0;

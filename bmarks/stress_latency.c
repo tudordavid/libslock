@@ -157,7 +157,7 @@ void *test(void *data)
             {
                 protected_data[i + lock_to_acq * cl_access].the_data[0]= d->id;
             }
-            release_lock(cluster_id,&local_d[lock_to_acq],&the_locks[lock_to_acq]);
+            release_lock(&local_d[lock_to_acq],&the_locks[lock_to_acq]);
             if (acq_delay>0) cpause(acq_delay);
 #if defined(USE_MUTEX_LOCKS)
     cpause(mutex_delay);
@@ -201,7 +201,7 @@ void *test(void *data)
 	t4 = getticks();
     COMPILER_BARRIER;
 #endif
-        release_lock(cluster_id,&local_d[lock_to_acq],&the_locks[lock_to_acq]);
+        release_lock(&local_d[lock_to_acq],&the_locks[lock_to_acq]);
         MEM_BARRIER;
         COMPILER_BARRIER;
         t2 = getticks();

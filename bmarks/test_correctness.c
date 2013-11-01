@@ -134,7 +134,7 @@ void *test_correctness(void *data)
     while (stop == 0) {
         acquire_lock(local_d,&the_lock);
         protected_data->counter++;
-        release_lock(cluster_id,local_d,&the_lock);
+        release_lock(local_d,&the_lock);
         d->num_acquires++;
     }
 

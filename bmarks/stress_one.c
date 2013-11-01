@@ -139,7 +139,7 @@ void *test(void *data)
             }
         }
 #endif
-        release_lock(cluster_id,local_d,&the_lock);
+        release_lock(local_d,&the_lock);
         if (acq_delay>0) {
             COMPILER_BARRIER;
             cpause(acq_delay);

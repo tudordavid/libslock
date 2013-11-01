@@ -132,7 +132,7 @@ void *test(void *data)
         d->acquire_time+=end;
         COMPILER_BARRIER;
         begin_release = getticks();
-        release_lock(cluster_id,&local_d[1],&the_locks[1]);
+        release_lock(&local_d[1],&the_locks[1]);
         MEM_BARRIER;
         COMPILER_BARRIER;
         d->release_time+=getticks() - begin_release - correction;

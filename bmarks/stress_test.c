@@ -150,7 +150,7 @@ void *test(void *data)
             }
         }
 #endif
-        release_lock(cluster_id,&local_d[lock_to_acq],&the_locks[lock_to_acq]);
+        release_lock(&local_d[lock_to_acq],&the_locks[lock_to_acq]);
         if (acq_delay>0) {
 #ifdef __tile__
             MEM_BARRIER;

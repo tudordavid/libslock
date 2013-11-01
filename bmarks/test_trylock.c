@@ -136,7 +136,7 @@ void *test_correctness(void *data)
             PAUSE;
         }
         protected_data->counter++;
-        release_trylock(cluster_id,local_d,&the_lock);
+        release_trylock(local_d,&the_lock);
         d->num_acquires++;
     }
 

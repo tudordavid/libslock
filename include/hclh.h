@@ -122,7 +122,7 @@ void end_hclh_global(hclh_global_params global_params);
 
 volatile qnode * hclh_acquire(local_queue *lq, global_queue *gq, qnode *my_qnode);
 
-qnode * hclh_release(qnode *my_qnode, qnode * my_pred, uint8_t th_cluster);
+qnode * hclh_release(qnode *my_qnode, qnode * my_pred);
 
 
 int is_free_hclh(local_queue *lq, global_queue *gq, qnode *my_qnode);
