@@ -447,10 +447,10 @@ int main(int argc, char **argv)
 
   avg_q /= num_threads;
 
-  printf("Total avg queuing: %10.3f which means (on avg):\n", avg_q);
+  printf("Total avg queuing: %10.4f which means (on avg):\n", avg_q);
   if (avg_q <= 1)
     {
-      printf("  %3.1f%% of the requests faced queuing\n", 100*avg_q);
+      printf("  %4.2f%% of the requests faced queuing\n", 100*avg_q);
     }
   else
     {
