@@ -81,7 +81,7 @@ INCLUDES := -I$(MAININCLUDE)
 OBJ_FILES :=  mcs.o clh.o ttas.o spinlock.o rw_ttas.o ticket.o alock.o hclh.o gl_lock.o htlock.o
 
 
-all:  bank bank_one bank_simple test_array_alloc test_trylock generic test_correctness stress_one stress_test stress_latency atomic_bench individual_ops uncontended  htlock_test measure_contention libsync.a
+all:  bank bank_one bank_simple test_array_alloc test_trylock sample_generic sample_mcs test_correctness stress_one stress_test stress_latency atomic_bench individual_ops uncontended  htlock_test measure_contention libsync.a
 	@echo "############### Used: " $(LOCK_VERSION) " on " $(PLATFORM) " with " $(OPTIMIZE)
 
 libsync.a: ttas.o rw_ttas.o ticket.o clh.o mcs.o hclh.o alock.o htlock.o include/atomic_ops.h include/utils.h include/lock_if.h
@@ -141,8 +141,11 @@ stress_one: bmarks/stress_one.c $(OBJ_FILES) Makefile
 test_correctness: bmarks/test_correctness.c $(OBJ_FILES) Makefile
 	$(GCC) $(LOCK_VERSION) $(ALTERNATE_SOCKETS) $(NO_DELAYS) -D_GNU_SOURCE  $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(INCLUDES) $(OBJ_FILES) bmarks/test_correctness.c -o test_correctness $(LIBS)
 
-generic: samples/generic.c $(OBJ_FILES) Makefile
-	$(GCC) $(LOCK_VERSION) $(ALTERNATE_SOCKETS) $(NO_DELAYS) -D_GNU_SOURCE  $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(INCLUDES) $(OBJ_FILES) samples/generic.c -o generic $(LIBS)
+sample_generic: samples/sample_generic.c $(OBJ_FILES) Makefile
+	$(GCC) $(LOCK_VERSION) $(ALTERNATE_SOCKETS) $(NO_DELAYS) -D_GNU_SOURCE  $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(INCLUDES) $(OBJ_FILES) samples/sample_generic.c -o sample_generic $(LIBS)
+
+sample_mcs: samples/sample_mcs.c $(OBJ_FILES) Makefile
+	$(GCC) $(LOCK_VERSION) $(ALTERNATE_SOCKETS) $(NO_DELAYS) -D_GNU_SOURCE  $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(INCLUDES) $(OBJ_FILES) samples/sample_mcs.c -o sample_mcs $(LIBS)
 
 
 test_trylock: bmarks/test_trylock.c $(OBJ_FILES) Makefile
@@ -169,4 +172,4 @@ htlock_test: htlock.o bmarks/htlock_test.c Makefile
 	$(GCC) -O0 -D_GNU_SOURCE $(COMPILE_FLAGS) $(PLATFORM) $(DEBUG_FLAGS) $(INCLUDES) bmarks/htlock_test.c -o htlock_test htlock.o $(LIBS)
 
 clean:
-	rm -f *.o locks mcs_test hclh_test bank_one bank_simple bank* stress_latency* test_array_alloc test_trylock generic test_correctness stress_one stress_test*  atomic_bench uncontended individual_ops trylock_test htlock_test measure_contention libsync.a
+	rm -f *.o locks mcs_test hclh_test bank_one bank_simple bank* stress_latency* test_array_alloc test_trylock sample_generic test_correctness stress_one stress_test*  atomic_bench uncontended individual_ops trylock_test htlock_test measure_contention libsync.a
