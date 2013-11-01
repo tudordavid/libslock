@@ -79,7 +79,7 @@ typedef struct ALIGNED(CACHE_LINE_SIZE) htlock
     htlock_local_t* local[NUMBER_OF_SOCKETS];
 } htlock_t;
 
-extern htlock_t* create_htlock();
+extern int create_htlock(htlock_t* htl);
 extern void init_htlock(htlock_t* htl); /* initiliazes an htlock */
 extern void init_thread_htlocks(uint32_t thread_num);
 extern htlock_t* init_htlocks(uint32_t num_locks);

@@ -164,18 +164,18 @@ void end_rw_ttas_array_global(rw_ttas* the_locks) {
     free(the_locks);
 }
 
-rw_ttas init_rw_ttas_global() {
-    rw_ttas the_lock;
-    the_lock.lock_data=0;
+int init_rw_ttas_global(rw_ttas* the_lock) {
+    the_lock->lock_data=0;
     MEM_BARRIER;
-    return the_lock;
+    return 0;
 }
 
-uint32_t init_rw_ttas_local(uint32_t thread_num){
+int init_rw_ttas_local(uint32_t thread_num, uint32_t * limit){
     set_cpu(thread_num);
+    *limit = 1;
     rw_seeds = seed_rand();
     MEM_BARRIER;
-    return 1;
+    return 0;
 }
 
 void end_rw_ttas_local() {

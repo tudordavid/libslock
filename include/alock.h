@@ -82,24 +82,24 @@ typedef struct lock {
 /*
  *lock array initalization and desctruction
  */
-lock_shared_t** init_alock_array_global(uint32_t num_locks, uint32_t num_processes);
+lock_shared_t* init_alock_array_global(uint32_t num_locks, uint32_t num_processes);
 
-array_lock_t** init_alock_array_local(uint32_t thread_num, uint32_t num_locks, lock_shared_t** the_locks);
+array_lock_t* init_alock_array_local(uint32_t thread_num, uint32_t num_locks, lock_shared_t* the_locks);
 
-void end_alock_array_local(array_lock_t** local_locks, uint32_t size);
+void end_alock_array_local(array_lock_t* local_locks, uint32_t size);
 
-void end_alock_array_global(lock_shared_t** the_locks, uint32_t size);
+void end_alock_array_global(lock_shared_t* the_locks, uint32_t size);
 
 /*
  *single lock initalization and desctruction
  */
-lock_shared_t* init_alock_global(uint32_t num_processes);
+int init_alock_global(uint32_t num_processes, lock_shared_t* the_lock);
 
-array_lock_t* init_alock_local(uint32_t thread_num, lock_shared_t* the_lock);
+int init_alock_local(uint32_t thread_num, lock_shared_t* the_lock, array_lock_t* my_lock);
 
-void end_alock_local(array_lock_t* local_lock);
+void end_alock_local(array_lock_t local_lock);
 
-void end_alock_global(lock_shared_t* the_lock);
+void end_alock_global(lock_shared_t the_lock);
 
 
 /*

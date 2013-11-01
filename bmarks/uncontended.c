@@ -31,9 +31,9 @@
 #define DEFAULT_ACQ_DURATION 10
 //the total duration of a test
 #define DEFAULT_DURATION 10000
-//default seed
-#define DEFAULT_SEED 0
+//the core that allocates the global lock data, then participates in lock acqusistions 
 #define DEFAULT_HOME_CORE 0
+//the other core participating in the lock aacquisitions
 #define DEFAULT_REMOTE_CORE 1
 
 static volatile int stop;
@@ -59,7 +59,6 @@ int acq_duration;
 int home_core;
 int remote_core;
 int acq_delay;
-int seed;
 
 
 ticks correction;
@@ -99,7 +98,6 @@ typedef struct thread_data {
     unsigned long num_acquires;
     ticks acquire_time;
     ticks release_time;
-    unsigned int seed;
     int the_core;
     int id;
     char padding[CACHE_LINE_SIZE];
@@ -134,7 +132,7 @@ void *test(void *data)
         d->acquire_time+=end;
         COMPILER_BARRIER;
         begin_release = getticks();
-        release_lock(cluster_id,&local_d[1],&the_locks[1]);
+        release_lock(&local_d[1],&the_locks[1]);
         MEM_BARRIER;
         COMPILER_BARRIER;
         d->release_time+=getticks() - begin_release - correction;
@@ -168,7 +166,6 @@ void catcher(int sig)
 }
 
 
-
 int main(int argc, char **argv)
 {
     set_cpu(the_cores[0]);
@@ -177,11 +174,9 @@ int main(int argc, char **argv)
         {"help",                      no_argument,       NULL, 'h'},
         {"locks",                     required_argument, NULL, 'l'},
         {"duration",                  required_argument, NULL, 'd'},
-        {"num-threads",               required_argument, NULL, 'n'},
         {"remote-core",               required_argument, NULL, 'r'},
         {"acquire",                   required_argument, NULL, 'a'},
         {"pause",                     required_argument, NULL, 'p'},
-        {"seed",                      required_argument, NULL, 's'},
         {NULL, 0, NULL, 0}
     };
 
@@ -201,7 +196,6 @@ int main(int argc, char **argv)
     acq_delay = DEFAULT_ACQ_DELAY;
     home_core = the_cores[DEFAULT_HOME_CORE];
     remote_core = DEFAULT_REMOTE_CORE;
-    seed = DEFAULT_SEED;
 
     head=1;
     tail=0;
@@ -210,7 +204,7 @@ int main(int argc, char **argv)
 
     while(1) {
         i = 0;
-        c = getopt_long(argc, argv, "hl:d:n:a:r:p:s", long_options, &i);
+        c = getopt_long(argc, argv, "hl:d:a:r:p:", long_options, &i);
 
         if(c == -1)
             break;
@@ -237,14 +231,10 @@ int main(int argc, char **argv)
                         "        Test duration in milliseconds (0=infinite, default=" XSTR(DEFAULT_DURATION) ")\n"
                         "  -r, --remote-core <int>\n"
                         "        Remote core (default=" XSTR(DEFAULT_REMOTE_CORE) ")\n"
-                        "  -n, --num-threads <int>\n"
-                        "        Number of threads (default=" XSTR(DEFAULT_NUM_THREADS) ")\n"
                         "  -a, --acquire <int>\n"
                         "        Number of cycles a lock is held (default=" XSTR(DEFAULT_ACQ_DURATION) ")\n"
                         "  -p, --pause <int>\n"
                         "        Number of cycles between a lock release and the next acquire (default=" XSTR(DEFAULT_ACQ_DELAY) ")\n"
-                        "  -s, --seed <int>\n"
-                        "        RNG seed (0=time-based, default=" XSTR(DEFAULT_SEED) ")\n"
                       );
                 exit(0);
             case 'l':
@@ -257,17 +247,11 @@ int main(int argc, char **argv)
             case 'd':
                 duration = atoi(optarg);
                 break;
-            case 'n':
-                //num_threads = atoi(optarg);
-                break;
             case 'a':
                 acq_duration = atoi(optarg);
                 break;
             case 'p':
                 acq_delay = atoi(optarg);
-                break;
-            case 's':
-                seed = atoi(optarg);
                 break;
             case '?':
                 printf("Use -h or --help for help\n");
@@ -310,11 +294,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if (seed == 0)
-        srand((int)time(NULL));
-    else
-        srand(seed);
-
     local_th_data = (local_data *)malloc(num_threads*sizeof(local_data));
 
     stop = 0;
@@ -338,7 +317,6 @@ int main(int argc, char **argv)
         data[i].num_acquires = 0;
         data[i].acquire_time = 0;
         data[i].release_time = 0;
-        data[i].seed = rand();
         data[i].barrier = &barrier;
         if (pthread_create(&threads[i], &attr, test, (void *)(&data[i])) != 0) {
             fprintf(stderr, "Error creating thread\n");

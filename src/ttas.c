@@ -134,20 +134,19 @@ void end_ttas_array_global(ttas_lock_t* the_locks) {
     free(the_locks);
 }
 
-ttas_lock_t init_ttas_global() {
-
-    ttas_lock_t the_lock;
-    the_lock.lock=0;
+int init_ttas_global(ttas_lock_t* the_lock) {
+    the_lock->lock=0;
     MEM_BARRIER;
-    return the_lock;
+    return 0;
 }
 
-uint32_t init_ttas_local(uint32_t thread_num){
+int init_ttas_local(uint32_t thread_num , uint32_t* limit){
     //assign the thread to the correct core
     set_cpu(thread_num);
+    *limit=1;
     ttas_seeds = seed_rand();
     MEM_BARRIER;
-    return 1;
+    return 0;
 }
 
 void end_ttas_local() {

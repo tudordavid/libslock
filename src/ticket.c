@@ -194,17 +194,17 @@ ticket_release(ticketlock_t* lock)
   lock->head++;
 }
 
-ticketlock_t
-create_ticketlock() 
+
+int create_ticketlock(ticketlock_t* the_lock) 
 {
-  ticketlock_t the_lock;
-  the_lock.head=1;
-  the_lock.tail=0;
-  return the_lock;
+    the_lock->head=1;
+    the_lock->tail=0;
+    MEM_BARRIER;
+    return 0;
 }
 
-int
-is_free_ticket(ticketlock_t* t)
+
+int is_free_ticket(ticketlock_t* t)
 {
   if ((t->head - t->tail) == 1) 
     {
@@ -213,8 +213,7 @@ is_free_ticket(ticketlock_t* t)
   return 0;
 }
 
-void
-init_thread_ticketlocks(uint32_t thread_num) 
+void init_thread_ticketlocks(uint32_t thread_num) 
 {
   set_cpu(thread_num);
 }

@@ -91,30 +91,30 @@ typedef struct hclh_local_params {
  *  Methods aiding with array of locks manipulation
  */
 
-hclh_global_params** init_hclh_array_global(uint32_t num_locks);
+hclh_global_params* init_hclh_array_global(uint32_t num_locks);
 
 
-hclh_local_params** init_hclh_array_local(uint32_t thread_num, uint32_t num_locks, hclh_global_params** the_params);
+hclh_local_params* init_hclh_array_local(uint32_t thread_num, uint32_t num_locks, hclh_global_params* the_params);
 
 
-void end_hclh_array_local(hclh_local_params** local_params, uint32_t size);
+void end_hclh_array_local(hclh_local_params* local_params, uint32_t size);
 
 
-void end_hclh_array_global(hclh_global_params** global_params, uint32_t size);
+void end_hclh_array_global(hclh_global_params* global_params, uint32_t size);
 
 /*
  *single lock initialization and desctruction
  */
-hclh_global_params* init_hclh_global();
+int init_hclh_global(hclh_global_params* the_lock);
 
 
-hclh_local_params* init_hclh_local(uint32_t thread_num, hclh_global_params* the_params);
+int init_hclh_local(uint32_t thread_num, hclh_global_params* the_params, hclh_local_params* local_d);
 
 
-void end_hclh_local(hclh_local_params* local_params);
+void end_hclh_local(hclh_local_params local_params);
 
 
-void end_hclh_global(hclh_global_params* global_params);
+void end_hclh_global(hclh_global_params global_params);
 
 /*
  *  Lock manipulation methods
@@ -122,7 +122,7 @@ void end_hclh_global(hclh_global_params* global_params);
 
 volatile qnode * hclh_acquire(local_queue *lq, global_queue *gq, qnode *my_qnode);
 
-qnode * hclh_release(qnode *my_qnode, qnode * my_pred, uint8_t th_cluster);
+qnode * hclh_release(qnode *my_qnode, qnode * my_pred);
 
 
 int is_free_hclh(local_queue *lq, global_queue *gq, qnode *my_qnode);

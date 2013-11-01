@@ -82,9 +82,9 @@ void end_rw_ttas_array_local(uint32_t* limits);
 
 void end_rw_ttas_array_global(rw_ttas* the_locks);
 
-rw_ttas init_rw_ttas_global();
+int init_rw_ttas_global(rw_ttas* the_lock);
 
-uint32_t init_rw_ttas_local(uint32_t thread_num);
+int init_rw_ttas_local(uint32_t thread_num, uint32_t* limit);
 
 void end_rw_ttas_local();
 

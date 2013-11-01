@@ -85,7 +85,7 @@ int read_accounts(volatile account_t *a1, volatile account_t *a2,  int thread_id
     amount+=a1->balance;
     amount+=a2->balance;
     if (use_locks!=0) {
-    release_read(cluster_id, &(local_th_data[thread_id]),&the_lock);
+    release_read(&(local_th_data[thread_id]),&the_lock);
     }
     //local_unlock_read(&gl);
 
@@ -102,7 +102,7 @@ int transfer(volatile account_t *src, volatile account_t *dst, int amount, int t
     src->balance-=amount;
     dst->balance+=amount;
     if (use_locks!=0) {
-    release_write(cluster_id, &(local_th_data[thread_id]),&the_lock);
+    release_write(&(local_th_data[thread_id]),&the_lock);
     }
     //local_unlock_write(&gl);
 
@@ -239,7 +239,7 @@ void *test(void *data)
     //#endif
 
     /* local initialization of locks */
-    local_th_data[d->id] = init_lock_local(phys_id, the_lock);
+    init_lock_local(phys_id, &the_lock, &(local_th_data[d->id]));
 
     /* Wait on barrier */
     barrier_cross(d->barrier);
@@ -490,7 +490,7 @@ int main(int argc, char **argv)
 #ifdef PRINT_OUTPUT
     printf("Initializing locks\n");
 #endif
-    the_lock = init_lock_global(nb_threads);
+    init_lock_global_nt(nb_threads,&the_lock);
 
     /* Access set from all threads */
     barrier_init(&barrier, nb_threads + 1);

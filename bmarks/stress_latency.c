@@ -35,8 +35,7 @@
 #define DEFAULT_CL_ACCESS 4
 //the total duration of a test
 #define DEFAULT_DURATION 10000
-//default seed
-#define DEFAULT_SEED 0
+//if DO_WRITES is set to 1, the threads will do writes on the shared cache lines
 #define DEFAULT_DO_WRITES 0
 
 static volatile int stop;
@@ -63,7 +62,6 @@ int acq_duration;
 int acq_delay;
 int cl_access;
 int do_writes;
-int seed;
 
 #if defined(MEASURE_CONTENTION) && defined(USE_TICKET_LOCKS)
 extern __thread uint64_t ticket_queued_total;
@@ -108,7 +106,6 @@ typedef struct thread_data {
     {
       barrier_t *barrier;
       unsigned long num_acquires;
-      unsigned int seed;
       int id;
 #if defined(DETAILED_LATENCIES)
       ticks acq_time;
@@ -160,7 +157,7 @@ void *test(void *data)
             {
                 protected_data[i + lock_to_acq * cl_access].the_data[0]= d->id;
             }
-            release_lock(cluster_id,&local_d[lock_to_acq],&the_locks[lock_to_acq]);
+            release_lock(&local_d[lock_to_acq],&the_locks[lock_to_acq]);
             if (acq_delay>0) cpause(acq_delay);
 #if defined(USE_MUTEX_LOCKS)
     cpause(mutex_delay);
@@ -204,7 +201,7 @@ void *test(void *data)
 	t4 = getticks();
     COMPILER_BARRIER;
 #endif
-        release_lock(cluster_id,&local_d[lock_to_acq],&the_locks[lock_to_acq]);
+        release_lock(&local_d[lock_to_acq],&the_locks[lock_to_acq]);
         MEM_BARRIER;
         COMPILER_BARRIER;
         t2 = getticks();
@@ -254,7 +251,6 @@ int main(int argc, char **argv)
         {"acquire",                   required_argument, NULL, 'a'},
         {"pause",                     required_argument, NULL, 'p'},
         {"clines",                    required_argument, NULL, 'c'},
-        {"seed",                      required_argument, NULL, 's'},
         {NULL, 0, NULL, 0}
     };
     
@@ -271,7 +267,6 @@ int main(int argc, char **argv)
     acq_duration = DEFAULT_ACQ_DURATION;
     acq_delay = DEFAULT_ACQ_DELAY;
     cl_access = DEFAULT_CL_ACCESS;
-    seed = DEFAULT_SEED;
 
     correction = getticks_correction_calc();
 
@@ -279,7 +274,7 @@ int main(int argc, char **argv)
 
     while(1) {
         i = 0;
-        c = getopt_long(argc, argv, "hl:d:n:a:p:w:c:s", long_options, &i);
+        c = getopt_long(argc, argv, "hl:d:n:a:p:w:c:", long_options, &i);
 
         if(c == -1)
             break;
@@ -314,8 +309,6 @@ int main(int argc, char **argv)
                         "        Number of cycles between a lock release and the next acquire (default=" XSTR(DEFAULT_ACQ_DELAY) ")\n"
                         "  -c, --clines <int>\n"
                         "        Number of cache lines written in every critical section (default=" XSTR(DEFAULT_CL_ACCESS) ")\n"
-                        "  -s, --seed <int>\n"
-                        "        RNG seed (0=time-based, default=" XSTR(DEFAULT_SEED) ")\n"
                         );
                 exit(0);
             case 'l':
@@ -348,9 +341,6 @@ int main(int argc, char **argv)
                 break;
             case 'c':
                 cl_access = atoi(optarg);
-                break;
-            case 's':
-                seed = atoi(optarg);
                 break;
             case '?':
                 printf("Use -h or --help for help\n");
@@ -407,11 +397,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if (seed == 0)
-        srand((int)time(NULL));
-    else
-        srand(seed);
-
     local_th_data = (local_data *)malloc(num_threads*sizeof(local_data));
 
     stop = 0;
@@ -437,7 +422,6 @@ int main(int argc, char **argv)
 #endif
         data[i].total_time = 0;
 
-        data[i].seed = rand();
         data[i].barrier = &barrier;
         if (pthread_create(&threads[i], &attr, test, (void *)(&data[i])) != 0) {
             fprintf(stderr, "Error creating thread\n");

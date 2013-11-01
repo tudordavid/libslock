@@ -61,6 +61,7 @@ typedef struct mcs_qnode {
 typedef volatile mcs_qnode *mcs_qnode_ptr;
 typedef mcs_qnode_ptr mcs_lock; //initialized to NULL
 
+typedef mcs_qnode* mcs_local_params;
 
 typedef struct mcs_global_params {
     mcs_lock* the_lock;
@@ -85,9 +86,9 @@ void end_mcs_array_global(mcs_global_params* the_locks, uint32_t size);
    single lock manipulation
    */
 
-mcs_global_params init_mcs_global();
+int init_mcs_global(mcs_global_params* the_lock);
 
-mcs_qnode* init_mcs_local(uint32_t thread_num);
+int init_mcs_local(uint32_t thread_num, mcs_qnode** the_qnode);
 
 void end_mcs_local(mcs_qnode* the_qnodes);
 

@@ -81,9 +81,9 @@ void end_clh_array_global(clh_global_params* the_locks, uint32_t size);
 /*
  *single lock creation and destruction methods
  */
-clh_global_params init_clh_global();
+int init_clh_global(clh_global_params* the_lock);
 
-clh_local_params init_clh_local(uint32_t thread_num);
+int init_clh_local(uint32_t thread_num, clh_local_params* local_d);
 
 void end_clh_local(clh_local_params the_params);
 

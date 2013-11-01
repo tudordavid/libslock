@@ -1,6 +1,38 @@
 /*
- *  benchmark used exclusively to test some lock functions; not used for performance tests
+ * File: test_trylock.c
+ * Author: Tudor David <tudor.david@epfl.ch>
+ *
+ * Description: 
+ *      Test which exposes bugs in trylock methods of the lock algorithms;
+ *      By no means an exhaustive test, but generally exposes
+ *      a buggy algorithm;
+ *      Each thread continuously increments a global counter
+ *      protected by a lock; if the final counter value is not
+ *      equal to the sum of the increments by each thread, then
+ *      the lock algorithm has a bug.
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2013 Tudor David
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 #include <assert.h>
 #include <getopt.h>
 #include <limits.h>
@@ -20,48 +52,29 @@
 
 uint64_t c[2] = {0, 0};
 
-#define STR(s) #s
-#define XSTR(s) STR(s)
+#define XSTR(s) #s
 
-//number of concurres threads
+//number of concurrent threads
 #define DEFAULT_NUM_THREADS 1
-//total number of locks
-#define DEFAULT_NUM_LOCKS 100
-//number of lock acquisitions in this test
-#define DEFAULT_NUM_ACQ 10000
-//delay between consecutive acquire attempts in cycles
-#define DEFAULT_ACQ_DELAY 10000
-//delay between lock acquire and release in cycles
-#define DEFAULT_ACQ_DURATION 10
-//delay between lock acquire and release in cycles
-#define DEFAULT_CL_ACCESS 4
-//the total duration of a test
+//total duration of the test, in milliseconds
 #define DEFAULT_DURATION 10000
-//if do_writes is 0, the test only reads cache lines, else it also writes them
-#define DEFAULT_DO_WRITES 0
 
 static volatile int stop;
 
+__thread unsigned long* seeds;
 __thread uint32_t phys_id;
 __thread uint32_t cluster_id;
 lock_global_data the_lock;
 __attribute__((aligned(CACHE_LINE_SIZE))) lock_local_data* local_th_data;
 
 typedef struct shared_data{
-    volatile char the_data[64];
+    volatile uint64_t counter;
+    char padding[56];
 } shared_data;
 
 __attribute__((aligned(CACHE_LINE_SIZE))) volatile shared_data* protected_data;
-__attribute__((aligned(CACHE_LINE_SIZE))) volatile uint32_t* protected_offsets;
 int duration;
-int num_locks;
-int do_writes;
 int num_threads;
-int acq_duration;
-int acq_delay;
-int fair_delay;
-int mutex_delay;
-int cl_access;
 
 typedef struct barrier {
     pthread_cond_t complete;
@@ -107,47 +120,23 @@ typedef struct thread_data {
     };
 } thread_data_t;
 
-void *test(void *data)
+void *test_correctness(void *data)
 {
     thread_data_t *d = (thread_data_t *)data;
     phys_id = the_cores[d->id];
     cluster_id = get_cluster(phys_id);
 
-    /* local initialization of locks */
-
     init_lock_local(phys_id, &the_lock, &(local_th_data[d->id]));
 
     barrier_cross(d->barrier);
 
-    int lock_to_acq=0;
-
     lock_local_data* local_d = &(local_th_data[d->id]);
     while (stop == 0) {
-        acquire_lock(local_d,&the_lock);
-        if (acq_duration > 0)
-        {
-            cpause(acq_duration);
+        while (acquire_trylock(local_d,&the_lock) !=0) {
+            PAUSE;
         }
-        uint32_t i;
-#ifndef NO_DELAYS
-        for (i = 0; i < cl_access; i++)
-        {
-            if (do_writes==1) {
-                protected_data[i + protected_offsets[lock_to_acq]].the_data[0]+=d->id;
-            } else {
-                protected_data[i + protected_offsets[lock_to_acq]].the_data[0]= d->id;
-            }
-        }
-#endif
-        release_lock(local_d,&the_lock);
-        if (acq_delay>0) {
-            COMPILER_BARRIER;
-            cpause(acq_delay);
-        }
-#if defined(USE_MUTEX_LOCKS)
-        if (acq_delay>0)
-            cpause(mutex_delay);
-#endif
+        protected_data->counter++;
+        release_trylock(local_d,&the_lock);
         d->num_acquires++;
     }
 
@@ -171,13 +160,8 @@ int main(int argc, char **argv)
     struct option long_options[] = {
         // These options don't set a flag
         {"help",                      no_argument,       NULL, 'h'},
-        {"locks",                     required_argument, NULL, 'l'},
         {"duration",                  required_argument, NULL, 'd'},
         {"num-threads",               required_argument, NULL, 'n'},
-        {"acquire",                   required_argument, NULL, 'a'},
-        {"pause",                     required_argument, NULL, 'p'},
-        {"do_writes",                 required_argument, NULL, 'w'},
-        {"clines",                    required_argument, NULL, 'c'},
         {NULL, 0, NULL, 0}
     };
 
@@ -189,18 +173,12 @@ int main(int argc, char **argv)
     struct timeval start, end;
     struct timespec timeout;
     duration = DEFAULT_DURATION;
-    num_locks = DEFAULT_NUM_LOCKS;
-    do_writes = DEFAULT_DO_WRITES;
     num_threads = DEFAULT_NUM_THREADS;
-    acq_duration = DEFAULT_ACQ_DURATION;
-    acq_delay = DEFAULT_ACQ_DELAY;
-    cl_access = DEFAULT_CL_ACCESS;
-
     sigset_t block_set;
 
     while(1) {
         i = 0;
-        c = getopt_long(argc, argv, "hl:d:n:w:a:p:c:", long_options, &i);
+        c = getopt_long(argc, argv, "h:d:n:", long_options, &i);
 
         if(c == -1)
             break;
@@ -221,52 +199,17 @@ int main(int argc, char **argv)
                         "Options:\n"
                         "  -h, --help\n"
                         "        Print this message\n"
-                        "  -l, --locks <int>\n"
-                        "        Number of locks in the test (default=" XSTR(DEFAULT_NUM_LOCKS) ")\n"
                         "  -d, --duration <int>\n"
                         "        Test duration in milliseconds (0=infinite, default=" XSTR(DEFAULT_DURATION) ")\n"
                         "  -n, --num-threads <int>\n"
                         "        Number of threads (default=" XSTR(DEFAULT_NUM_THREADS) ")\n"
-                        "  -a, --acquire <int>\n"
-                        "        Number of cycles a lock is held (default=" XSTR(DEFAULT_ACQ_DURATION) ")\n"
-                        "  -w, --do_writes <int>\n"
-                        "        Whether or not the test writes cache lines (default=" XSTR(DEFAULT_DO_WRITES) ")\n"
-                        "  -p, --pause <int>\n"
-                        "        Number of cycles between a lock release and the next acquire (default=" XSTR(DEFAULT_ACQ_DELAY) ")\n"
-                        "  -c, --clines <int>\n"
-                        "        Number of cache lines written in every critical section (default=" XSTR(DEFAULT_CL_ACCESS) ")\n"
-                        );
+                      );
                 exit(0);
-            case 'l':
-                num_locks = atoi(optarg);
-                break;
             case 'd':
                 duration = atoi(optarg);
                 break;
             case 'n':
                 num_threads = atoi(optarg);
-                break;
-            case 'w':
-                do_writes = atoi(optarg);
-                break;
-            case 'a':
-#ifdef NO_DELAYS
-#ifdef PRINT_OUTPUT
-                printf("*** the NO_DELAYS flag is set");
-#endif
-#endif
-                acq_duration = atoi(optarg);
-                break;
-            case 'p':
-#ifdef NO_DELAYS
-#ifdef PRINT_OUTPUT
-                printf("*** the NO_DELAYS flag is set");
-#endif
-#endif
-                acq_delay = atoi(optarg);
-                break;
-            case 'c':
-                cl_access = atoi(optarg);
                 break;
             case '?':
                 printf("Use -h or --help for help\n");
@@ -275,40 +218,14 @@ int main(int argc, char **argv)
                 exit(1);
         }
     }
-    fair_delay=100;
-    mutex_delay=(num_threads-1) * 30 / NOP_DURATION;
-    fair_delay=fair_delay/NOP_DURATION;
-    acq_delay=acq_delay/NOP_DURATION;
-    acq_duration=acq_duration/NOP_DURATION;
-    num_locks=pow2roundup(num_locks);
     assert(duration >= 0);
-    assert(num_locks >= 1);
     assert(num_threads > 0);
-    assert(acq_duration >= 0);
-    assert(acq_delay >= 0);
-    assert(cl_access >= 0);
 
-    if (cl_access > 0)
-    {
-        protected_data = (shared_data*) calloc(cl_access * num_locks, sizeof(shared_data));
-        protected_offsets = (uint32_t*) calloc(num_locks, sizeof(shared_data));
-        int j;
-        for (j = 0; j < num_locks; j++) {
-            protected_offsets[j]=cl_access * j;
-        }
-    }
+    protected_data = (shared_data*) malloc(sizeof(shared_data));
+    protected_data->counter=0;
 #ifdef PRINT_OUTPUT
-    printf("Number of locks        : %d\n", num_locks);
     printf("Duration               : %d\n", duration);
     printf("Number of threads      : %d\n", num_threads);
-    printf("Lock is held for       : %d\n", acq_duration);
-    printf("Delay between locks    : %d\n", acq_delay);
-    printf("Cache lines accessed   : %d\n", cl_access);
-    printf("Do writes              : %d\n", do_writes);
-    printf("Type sizes             : int=%d/long=%d/ptr=%d\n",
-            (int)sizeof(int),
-            (int)sizeof(long),
-            (int)sizeof(void *));
 #endif
     timeout.tv_sec = duration / 1000;
     timeout.tv_nsec = (duration % 1000) * 1000000;
@@ -342,7 +259,7 @@ int main(int argc, char **argv)
         data[i].id = i;
         data[i].num_acquires = 0;
         data[i].barrier = &barrier;
-        if (pthread_create(&threads[i], &attr, test, (void *)(&data[i])) != 0) {
+        if (pthread_create(&threads[i], &attr, test_correctness, (void *)(&data[i])) != 0) {
             fprintf(stderr, "Error creating thread\n");
             exit(1);
         }
@@ -382,30 +299,21 @@ int main(int argc, char **argv)
         }
     }
 
-#ifdef PRINT_OUTPUT
-    for (i = 0; i < cl_access * num_threads; i++)
-    {
-        printf("%d ", protected_data[i].the_data[0]);
-    }
-    if (cl_access > 0)
-    {
-        printf("\n");
-    }
-#endif
     duration = (end.tv_sec * 1000 + end.tv_usec / 1000) - (start.tv_sec * 1000 + start.tv_usec / 1000);
 
-    unsigned long acquires = 0;
+    uint64_t acquires = 0;
     for (i = 0; i < num_threads; i++) {
-#ifdef PRINT_OUTPUT
         printf("Thread %d\n", i);
-        printf("  #acquire   : %lu\n", data[i].num_acquires);
-#endif
+        printf("  # acquires   : %lu\n", data[i].num_acquires);
         acquires += data[i].num_acquires;
     }
 #ifdef PRINT_OUTPUT
     printf("Duration      : %d (ms)\n", duration);
 #endif
-    printf("#acquires     : %lu ( %lu / s)\n", acquires, (unsigned long )(acquires * 1000.0 / duration));
+    printf("Counter total : %llu, Expected: %llu\n", (unsigned long long) protected_data->counter, (unsigned long long) acquires);
+    if (protected_data->counter != acquires) {
+        printf("Incorrect lock behavior!\n");
+    }
 
     /* Cleanup locks */
     free_lock_global(the_lock);

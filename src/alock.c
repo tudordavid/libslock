@@ -98,77 +98,75 @@ void alock_unlock(array_lock_t* local_lock)
 /*
  *  Methods for array of locks manipulation
  */
-lock_shared_t** init_alock_array_global(uint32_t num_locks, uint32_t num_processes) {
+lock_shared_t* init_alock_array_global(uint32_t num_locks, uint32_t num_processes) {
     uint32_t i;
-    lock_shared_t** the_locks = (lock_shared_t**) malloc(num_locks * sizeof(lock_shared_t*));
+    lock_shared_t* the_locks = (lock_shared_t*) calloc(num_locks, sizeof(lock_shared_t));
     for (i = 0; i < num_locks; i++) {
-        the_locks[i]=(lock_shared_t*)malloc(sizeof(lock_shared_t));
-        bzero((void*)the_locks[i],sizeof(lock_shared_t));
-        the_locks[i]->size = num_processes;
-        the_locks[i]->flags[0].flag=1;
-        the_locks[i]->tail=0;
+//        the_locks[i]=(lock_shared_t*)malloc(sizeof(lock_shared_t));
+//        bzero((void*)the_locks[i],sizeof(lock_shared_t));
+        the_locks[i].size = num_processes;
+        the_locks[i].flags[0].flag=1;
+        the_locks[i].tail=0;
     }
     MEM_BARRIER;
     return the_locks;
 }
 
-array_lock_t** init_alock_array_local(uint32_t thread_num, uint32_t num_locks, lock_shared_t** the_locks) {
+array_lock_t* init_alock_array_local(uint32_t thread_num, uint32_t num_locks, lock_shared_t* the_locks) {
     //assign the thread to the correct core
     set_cpu(thread_num);
 
     uint32_t i;
-    array_lock_t** local_locks = (array_lock_t**) malloc(num_locks * sizeof(array_lock_t*));
+    array_lock_t* local_locks = (array_lock_t*) malloc(num_locks * sizeof(array_lock_t));
     for (i = 0; i < num_locks; i++) {
-        local_locks[i]=(array_lock_t*) malloc(sizeof(array_lock_t));
-        local_locks[i]->my_index=0;
-        local_locks[i]->shared_data = the_locks[i];
+//        local_locks[i]=(array_lock_t*) malloc(sizeof(array_lock_t));
+        local_locks[i].my_index=0;
+        local_locks[i].shared_data = &(the_locks[i]);
     }
     MEM_BARRIER;
     return local_locks;
 }
 
-lock_shared_t* init_alock_global(uint32_t num_processes) {
-    lock_shared_t* the_lock = (lock_shared_t*) malloc(sizeof(lock_shared_t));
+int init_alock_global(uint32_t num_processes, lock_shared_t* the_lock) {
     bzero((void*)the_lock,sizeof(lock_shared_t));
     the_lock->size = num_processes;
     the_lock->flags[0].flag=1;
     the_lock->tail=0;
     MEM_BARRIER;
-    return the_lock;
+    return 0;
 }
 
-array_lock_t* init_alock_local(uint32_t thread_num, lock_shared_t* the_lock) {
+int init_alock_local(uint32_t thread_num, lock_shared_t* the_lock, array_lock_t* local_lock) {
     //assign the thread to the correct core
     set_cpu(thread_num);
 
-    array_lock_t* local_lock = (array_lock_t*) malloc(sizeof(array_lock_t));
     local_lock->my_index=0;
     local_lock->shared_data = the_lock;
     MEM_BARRIER;
-    return local_lock;
+    return 0;
 }
 
-void end_alock_array_local(array_lock_t** local_locks, uint32_t size) {
-    uint32_t i;
-    for (i = 0; i < size; i++) {
-        free(local_locks[i]);
-    }
+void end_alock_array_local(array_lock_t* local_locks, uint32_t size) {
+    //uint32_t i;
+    //for (i = 0; i < size; i++) {
+    //    free(local_locks[i]);
+    //}
     free(local_locks);
 }
 
-void end_alock_array_global(lock_shared_t** the_locks, uint32_t size) {
-    uint32_t i;
-    for (i = 0; i < size; i++) {
-        free(the_locks[i]);
-    }
+void end_alock_array_global(lock_shared_t* the_locks, uint32_t size) {
+    //uint32_t i;
+    //for (i = 0; i < size; i++) {
+    //    free(the_locks[i]);
+    //}
     free(the_locks); 
 }
 
-void end_alock_local(array_lock_t* local_lock) {
-    free(local_lock);
+void end_alock_local(array_lock_t local_lock) {
+    //free(local_lock);
 }
 
-void end_alock_global(lock_shared_t* the_lock) {
-    free(the_lock); 
+void end_alock_global(lock_shared_t the_lock) {
+    //free(the_lock); 
 }
 

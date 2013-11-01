@@ -77,7 +77,7 @@ void ticket_acquire(ticketlock_t* lock);
 void ticket_release(ticketlock_t* lock);
 int is_free_ticket(ticketlock_t* t);
 
-ticketlock_t create_ticketlock();
+int create_ticketlock(ticketlock_t* the_lock);
 ticketlock_t* init_ticketlocks(uint32_t num_locks);
 void init_thread_ticketlocks(uint32_t thread_num);
 void free_ticketlocks(ticketlock_t* the_locks);
