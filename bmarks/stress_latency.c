@@ -155,7 +155,14 @@ void *test(void *data)
             uint32_t i;
             for (i = 0; i < cl_access; i++)
             {
-                protected_data[i + lock_to_acq * cl_access].the_data[0]= d->id;
+	      if (do_writes==1) {
+#if defined(OPTERON_OPTIMIZE)
+	      PREFETCHW(&protected_data[i + protected_offsets[lock_to_acq]]);
+#endif
+                protected_data[i + protected_offsets[lock_to_acq]].the_data[0]+=d->id;
+	      } else {
+                protected_data[i + protected_offsets[lock_to_acq]].the_data[0]= d->id;
+	      }
             }
             release_lock(&local_d[lock_to_acq],&the_locks[lock_to_acq]);
             if (acq_delay>0) cpause(acq_delay);
@@ -189,6 +196,9 @@ void *test(void *data)
         for (i = 0; i < cl_access; i++)
         {
             if (do_writes==1) {
+#if defined(OPTERON_OPTIMIZE)
+	      PREFETCHW(&protected_data[i + protected_offsets[lock_to_acq]]);
+#endif
                 protected_data[i + protected_offsets[lock_to_acq]].the_data[0]+=d->id;
             } else {
                 protected_data[i + protected_offsets[lock_to_acq]].the_data[0]= d->id;

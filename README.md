@@ -8,7 +8,7 @@ This repository provides:
 
 The package has been tested on x86_64 Intel and AMD machines, Tilera and Sparc architectures.
 
-A version of this code was used in the paper **"Everything you always wanted to know about synchronization but were afraid to ask"** (accessible here: http://sigops.org/sosp/sosp13/papers/p33-david.pdf).
+A version of this code was used in the paper **"Everything you always wanted to know about synchronization but were afraid to ask"** (accessible here: http://dl.acm.org/citation.cfm?doid=2517349.2522714).
 
 Makefile parameters:
 
