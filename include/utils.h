@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <malloc.h>
 #include <sched.h>
 #include <inttypes.h>
 #include <sys/time.h>
@@ -268,7 +269,9 @@ extern "C" {
 
     static inline unsigned long* seed_rand() {
         unsigned long* seeds;
-        seeds = (unsigned long*) malloc(3 * sizeof(unsigned long));
+        int num_seeds = CACHE_LINE_SIZE/sizeof(unsigned long);
+        if (num_seeds<3) num_seeds=3;
+        seeds = (unsigned long*) memalign(CACHE_LINE_SIZE, num_seeds * sizeof(unsigned long));
         seeds[0] = getticks() % 123456789;
         seeds[1] = getticks() % 362436069;
         seeds[2] = getticks() % 521288629;
