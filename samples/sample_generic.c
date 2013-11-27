@@ -33,6 +33,7 @@
 #define NUM_THREADS 4
 
 #include "lock_if.h"
+#include "atomic_ops.h"
 
 /* global data */
 lock_global_data the_lock;
