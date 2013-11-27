@@ -310,6 +310,7 @@ static inline void release_read(lock_local_data *local_d, lock_global_data *glob
 }
 
 
+extern inline void set_cpu(int);
 
 static inline local_data init_lock_array_local(int core_to_pin, int num_locks, global_data the_locks){
 #ifdef USE_MCS_LOCKS
