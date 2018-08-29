@@ -17,7 +17,7 @@ Locking Algorithm
 Can be passed using `LOCK_VERSION` to the Makefile. `LOCK_VERSION` can take one of the following values:
 
 - `USE_TTAS_LOCKS` - use test-and-test-and-set locks
-- `USE_SPINLOCK_LOCKS` - use a test-and-set spinlocks
+- `USE_SPINLOCK_LOCKS` - use test-and-set spinlocks
 - `USE_TICKET_LOCKS` - use ticket locks
 - `USE_HTICKET_LOCKS` - use hierarchical ticket locks
 - `USE_MCS_LOCKS` - use MCS locks
